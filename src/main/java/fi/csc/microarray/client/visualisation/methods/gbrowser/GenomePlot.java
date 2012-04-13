@@ -4,9 +4,6 @@ import java.awt.Color;
 import java.awt.Rectangle;
 import java.awt.Shape;
 import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.net.MalformedURLException;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -20,9 +17,9 @@ import org.jfree.chart.plot.PlotRenderingInfo;
 import org.jfree.chart.plot.PlotState;
 import org.jfree.data.general.DatasetChangeEvent;
 
-import fi.csc.microarray.client.visualisation.methods.gbrowser.message.RegionDouble;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.message.Chromosome;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.message.Region;
+import fi.csc.microarray.client.visualisation.methods.gbrowser.message.RegionDouble;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.track.EmptyTrack;
 
 /**
@@ -112,6 +109,8 @@ public class GenomePlot extends Plot {
 				dataView.setBpRegion(new RegionDouble(bpRegion), false);
 			}		
 		});
+		
+		
 	}
 
 	public View getDataView() {
@@ -274,38 +273,6 @@ public class GenomePlot extends Plot {
 		return true;
 	}
 
-	/**
-	 * Provides serialization support.
-	 * 
-	 * @param stream
-	 *            the output stream.
-	 * 
-	 * @throws IOException
-	 *             if there is an I/O error.
-	 * @throws NullPointerException
-	 *             if stream is null.
-	 */
-	private void writeObject(ObjectOutputStream stream) throws IOException {
-		stream.defaultWriteObject();
-	}
-
-	/**
-	 * Provides serialization support.
-	 * 
-	 * @param stream
-	 *            the input stream.
-	 * 
-	 * @throws IOException
-	 *             if there is an I/O error.
-	 * @throws ClassNotFoundException
-	 *             if there is a classpath problem.
-	 * @throws NullPointerException
-	 *             if stream is null.
-	 */
-	private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
-		stream.defaultReadObject();
-	}
-
 	public void redraw() {
 		this.datasetChanged(new DatasetChangeEvent(this, null));		
 	}
@@ -357,6 +324,7 @@ public class GenomePlot extends Plot {
     }
 
 	public void clean() {
+		overviewView.clean();
 		dataView.clean();
 	}
 }

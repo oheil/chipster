@@ -34,10 +34,10 @@ import fi.csc.microarray.client.visualisation.methods.gbrowser.fileFormat.Column
 import fi.csc.microarray.client.visualisation.methods.gbrowser.message.AreaRequest;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.message.BpCoord;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.message.BpCoordDouble;
-import fi.csc.microarray.client.visualisation.methods.gbrowser.message.Region;
-import fi.csc.microarray.client.visualisation.methods.gbrowser.message.RegionDouble;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.message.Chromosome;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.message.FsfStatus;
+import fi.csc.microarray.client.visualisation.methods.gbrowser.message.Region;
+import fi.csc.microarray.client.visualisation.methods.gbrowser.message.RegionDouble;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.track.CoverageAndSNPTrack;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.track.QualityCoverageTrack;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.track.RulerTrack;
@@ -131,31 +131,6 @@ public abstract class View implements MouseListener, MouseMotionListener, MouseW
 			}
 		}
 		return tracks;
-	}
-
-	public BpCoord getMaxBp() {
-
-		BpCoord max = null;
-
-		if (bpRegion != null) {
-			for (Track t : getTracks()) {
-
-				BpCoord trackMax = t.getMaxBp(bpRegion.start.chr);
-
-				if (trackMax != null && (max == null || max.compareTo(trackMax) > 0)) {
-					max = trackMax;
-				}
-			}
-		}
-
-		if (max != null) {
-			// Little bit empty space to the end
-			max.bp += 10000;
-			return max;
-
-		} else {
-			return null;
-		}
 	}
 
 	protected void drawView(Graphics2D g, boolean isAnimation) {
@@ -455,13 +430,15 @@ public abstract class View implements MouseListener, MouseMotionListener, MouseW
 				}
 			}
 		}
+		
+		Region requestRegion = getBpRegion();
 
 		// Fire area requests for concise requests
 		for (DataSource file : conciseDatas.keySet()) {
 			FsfStatus status = new FsfStatus();
 			status.clearQueues = true;
 			status.concise = true;
-			getQueueManager().addAreaRequest(file, new AreaRequest(getBpRegion(), conciseDatas.get(file), status), true);
+			getQueueManager().addAreaRequest(file, new AreaRequest(requestRegion, conciseDatas.get(file), status), true);
 		}
 
 		// Fire area requests for precise requests
@@ -469,13 +446,39 @@ public abstract class View implements MouseListener, MouseMotionListener, MouseW
 			FsfStatus status = new FsfStatus();
 			status.clearQueues = true;
 			status.concise = false;
-			getQueueManager().addAreaRequest(file, new AreaRequest(getBpRegion(), preciseDatas.get(file), status), true);
+			getQueueManager().addAreaRequest(file, new AreaRequest(requestRegion, preciseDatas.get(file), status), true);
 		}
 	}
 
 	public void setBpRegion(RegionDouble region, boolean disableDrawing) {
+		
+		RegionDouble limitedRegion = region.clone();
+		
+		if (limitedRegion.start.bp < 0 ) {
+			limitedRegion.move(-limitedRegion.start.bp);
+		}
+		
+		if (viewLimiter != null && viewLimiter.getLimit() != null) {
+			BpCoord maxBp = viewLimiter.getLimit();
 
-		this.bpRegion = region;
+			if (maxBp != null && maxBp.bp != 0) {
+				
+				//Little bit extra space to the end
+				maxBp.bp += 100000;
+
+				if (limitedRegion.getLength() > maxBp.bp) {
+
+					limitedRegion.end.bp = (double)maxBp.bp;
+
+				} else if (limitedRegion.end.bp > maxBp.bp) {
+
+					double delta = limitedRegion.end.bp - maxBp.bp;
+					limitedRegion.move(-delta);
+				}
+			}
+		}
+
+		this.bpRegion = limitedRegion;
 
 		// Bp-region change may change visibility of tracks, calculate sizes again
 		trackHeight = null;
@@ -492,7 +495,7 @@ public abstract class View implements MouseListener, MouseMotionListener, MouseW
 	}
 
 	public Region getBpRegion() {
-		return new Region((long) (double) bpRegion.start.bp, bpRegion.start.chr, (long) (double) bpRegion.end.bp, bpRegion.end.chr);
+			return new Region((long) (double) bpRegion.start.bp, bpRegion.start.chr, (long)Math.ceil((double) bpRegion.end.bp), bpRegion.end.chr);
 	}
 
 	public void mouseClicked(MouseEvent e) {
@@ -584,6 +587,8 @@ public abstract class View implements MouseListener, MouseMotionListener, MouseW
 
 	private Timer mouseAnimationTimer;
 
+	private ViewLimiter viewLimiter;
+
 	public void mouseWheelMoved(final MouseWheelEvent e) {
 
 		if (!parentPlot.isFullHeight()) {
@@ -655,27 +660,7 @@ public abstract class View implements MouseListener, MouseMotionListener, MouseW
 
 			startBp = (double) (pointerBp.bp - width * pointerRelative);
 			endBp = (double) (pointerBp.bp + width * (1 - pointerRelative));
-
-			BpCoord maxBp = getMaxBp();
-
-			if (startBp < 0) {
-				endBp += -startBp;
-				startBp = 0;
-			}
-
-			if (maxBp != null) {
-				// check bounds
-				long maxBpVal = maxBp.bp;
-
-				if (endBp > maxBpVal) {
-					startBp -= endBp - maxBpVal;
-					endBp = maxBpVal;
-
-					if (startBp < 0) {
-						startBp = 0;
-					}
-				}
-			}
+			
 			setBpRegion(new RegionDouble(startBp, getBpRegionDouble().start.chr, endBp, getBpRegionDouble().end.chr), disableDrawing);
 			
 			if (!disableDrawing) {
@@ -777,5 +762,9 @@ public abstract class View implements MouseListener, MouseMotionListener, MouseW
 	public void clean() {
 		
 		queueManager.poisonAll();
+	}
+
+	public void setViewLimiter(ViewLimiter viewLimiter) {
+		this.viewLimiter = viewLimiter;
 	}
 }

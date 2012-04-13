@@ -15,7 +15,6 @@ import java.util.TreeSet;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.CytobandDataSource;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.DataSource;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.View;
-import fi.csc.microarray.client.visualisation.methods.gbrowser.dataFetcher.AreaRequestHandler;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.dataFetcher.Cytoband;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.drawable.Drawable;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.drawable.LineDrawable;
@@ -24,7 +23,6 @@ import fi.csc.microarray.client.visualisation.methods.gbrowser.drawable.TextDraw
 import fi.csc.microarray.client.visualisation.methods.gbrowser.fileFormat.ColumnType;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.message.AreaResult;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.message.BpCoord;
-import fi.csc.microarray.client.visualisation.methods.gbrowser.message.Chromosome;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.message.RegionContent;
 
 /**  
@@ -35,8 +33,6 @@ public class CytobandTrack extends Track {
 	private static final int THICKNESS = 11;
 
 	private static final int MARGIN = 2;
-
-	private BpCoord maxBp;
 
 	private SortedSet<Cytoband> cbands = new TreeSet<Cytoband>();
 
@@ -52,16 +48,16 @@ public class CytobandTrack extends Track {
 		stainColors.put(Cytoband.Stain.GPOS66, Color.darkGray);
 		stainColors.put(Cytoband.Stain.GPOS75, Color.darkGray);
 		stainColors.put(Cytoband.Stain.GPOS100, Color.black);
+		stainColors.put(Cytoband.Stain.GPOS, Color.black);
 		stainColors.put(Cytoband.Stain.ACEN, null);
-		stainColors.put(Cytoband.Stain.GVAR, Color.white);
+		stainColors.put(Cytoband.Stain.GVAR, Color.lightGray);
 		stainColors.put(Cytoband.Stain.STALK, null);
-		stainColors.put(Cytoband.Stain.TIP, null);
+		stainColors.put(Cytoband.Stain.TIP, Color.black);
 		stainColors.put(Cytoband.Stain.UNRECOGNIZED, null);
 	}
 
-	public CytobandTrack(View view, CytobandDataSource data,
-	        Class<? extends AreaRequestHandler> handler, boolean showText) {
-		super(view, data, handler); 
+	public CytobandTrack(View view, CytobandDataSource data, boolean showText) {
+		super(view, data); 
 
 		this.showText = showText;
 	}
@@ -216,11 +212,5 @@ public class CytobandTrack extends Track {
 	@Override
 	public boolean isConcised() {
 		return false;
-	}
-
-	@Override
-	public BpCoord getMaxBp(Chromosome chr) {
-
-		return maxBp;
 	}
 }

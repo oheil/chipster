@@ -16,6 +16,7 @@ import fi.csc.microarray.client.visualisation.methods.gbrowser.fileFormat.Column
 import fi.csc.microarray.client.visualisation.methods.gbrowser.fileFormat.Strand;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.message.AreaRequest;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.message.Chromosome;
+import fi.csc.microarray.client.visualisation.methods.gbrowser.message.GeneRequest;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.message.Region;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.message.RegionContent;
 
@@ -66,7 +67,7 @@ public class GtfFileFetcherThread extends Thread {
 	}
 
 	public void run() {
-
+		
 		while (!poison) {
 			try {
 				processFileRequest(fileRequestQueue.take());
@@ -94,7 +95,6 @@ public class GtfFileFetcherThread extends Thread {
 //			System.out.println(lastOperation + ": \t" + (System.currentTimeMillis() - lastTime));
 //			lastTime = System.currentTimeMillis();
 //		}
-
 	}
 
 	private void readFile() throws IOException {
@@ -117,7 +117,7 @@ public class GtfFileFetcherThread extends Thread {
 
 		String geneId;
 		String transcId;
-		String exonIndex;
+		//String exonIndex;
 		String geneName;
 		String transcName;
 		
@@ -144,17 +144,24 @@ public class GtfFileFetcherThread extends Thread {
 			}
 
 			ids = parseIds(cols[8]);
-
+			
 			geneId = ids[0];
 			transcId = ids[1];
-			exonIndex = ids[2];
+			//exonIndex = ids[2];
 			geneName = ids[3];
 			transcName = ids[4];
+			
+//			//Keep only gene information from other chromosomes
+//			if (!chrInMemory.toNormalisedString().equals(chr)) {
+//				if (!"1".equals(exonIndex)) {
+//					continue;
+//				}
+//			}
 			
 			Region region = new Region(Long.parseLong(exonStart), Long.parseLong(exonEnd), 
 					new Chromosome(chr), getStrand(strand));
 		
-			Exon exon = new Exon(region, feature, 0); //Integer.parseInt(exonIndex));
+			Exon exon = new Exon(region, feature);
 
 			genes.addExon(exon, geneId, transcId, geneName, transcName, biotype);			
 		}
@@ -191,6 +198,7 @@ public class GtfFileFetcherThread extends Thread {
 		
 		stopwatch("coverage");
 		stopwatch("END");
+		
 	} 
 
 	private static Strand getStrand(String strand) {
@@ -205,15 +213,40 @@ public class GtfFileFetcherThread extends Thread {
 		return Strand.UNRECOGNIZED;
 	}
 
-	public static String[] parseIds(String ids) {
+	private static final String[] ID_FIELDS = { "gene_id", "transcript_id", "exon_number", "gene_name", "transcript_name" };
+	
+	public static String[] parseIds(String ids) {		
+		
 		String[] split = ids.split(";");
-
+		String[] result = new String[ID_FIELDS.length];
+		
+		String key = null;
+		String value = null;
+		int indexOfQuotationMark = 0;
+		
 		for (int i = 0; i < split.length; i++) {
-			split[i] = split[i].substring(split[i].indexOf("\"") + 1, split[i]
+			
+			indexOfQuotationMark = split[i].indexOf("\"");
+			
+			key = split[i].substring(1, indexOfQuotationMark - 1);
+			value = split[i].substring(indexOfQuotationMark + 1, split[i]
 					.lastIndexOf("\""));
+			
+			for (int fieldNumber = 0; fieldNumber < ID_FIELDS.length; fieldNumber++) {
+				if (ID_FIELDS[fieldNumber].equals(key)) {
+					result[fieldNumber] = value;
+				}
+			}
 		}
 
-		return split;
+		return result;
+	}
+	
+	private void updateFor(Chromosome requestChr) throws IOException {
+		genes = new GeneSet();
+
+		chrInMemory = requestChr;
+		readFile();
 	}
 
 	private void processFileRequest(BpCoordFileRequest fileRequest) throws IOException {
@@ -222,22 +255,30 @@ public class GtfFileFetcherThread extends Thread {
 			poison = true;
 			return;
 		}
-
+		
 		Chromosome requestChr = fileRequest.areaRequest.start.chr;
 		
-		if (genes == null || !requestChr.equals(chrInMemory)) {
-			genes = new GeneSet();
-
-			chrInMemory = requestChr;
-			readFile();
+		if (genes == null) {
+			updateFor(requestChr);
 		}
 
 		AreaRequest request = fileRequest.areaRequest;
 		List<RegionContent> resultList = new ArrayList<RegionContent>();
 
-		if (!request.status.concise) {
+		if (fileRequest.areaRequest instanceof GeneRequest) {
+			
+			resultList.addAll(processGeneSearch((GeneRequest)fileRequest.areaRequest, fileRequest));
+			
+		} else { 
+			
+			if ( !requestChr.equals(chrInMemory)) {
+				updateFor(requestChr);
+			}
+			
+			if (!request.status.concise) {
 
-			Collection<Gene> filtered = genes.getGenes(new Region(request.start.bp - 5000, request.end.bp + 5000, new Chromosome("1")));
+			//FIXME create proper data structure for interval queries
+			Collection<Gene> filtered = genes.getGenes(new Region(request.start.bp - 10000000, request.end.bp + 10000000, requestChr));
 
 
 			for (Gene gene : filtered) {
@@ -248,7 +289,6 @@ public class GtfFileFetcherThread extends Thread {
 
 				resultList.add(new RegionContent(gene.getRegion(), values));
 			}
-
 
 		} else {
 			
@@ -266,6 +306,7 @@ public class GtfFileFetcherThread extends Thread {
 				resultList.add(new RegionContent(entry.getKey(), values));
 			}
 		}
+		}
 		
 		ParsedFileResult result = new ParsedFileResult(resultList, fileRequest, request, request.status);
 
@@ -273,6 +314,21 @@ public class GtfFileFetcherThread extends Thread {
 		areaRequestThread.notifyAreaRequestHandler();
 	}
 	
+	private List<RegionContent> processGeneSearch(GeneRequest searchRequest, BpCoordFileRequest fileRequest) {
+		Gene gene = genes.getGene(searchRequest.getSearchString());
+		
+		List<RegionContent> resultList = new ArrayList<RegionContent>();
+		
+		if (gene != null) {
+			
+			LinkedHashMap<ColumnType, Object> values = new LinkedHashMap<ColumnType, Object>();
+			values.put(ColumnType.VALUE, gene);
+			resultList.add(new RegionContent(gene.getRegion(), values));
+		}
+		
+		return resultList;
+	}
+
 	public String toString() {
 		return this.getClass().getName() + " - " + dataSource;
 	}

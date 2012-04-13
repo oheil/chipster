@@ -41,7 +41,7 @@ public class GeneSet extends TreeMap<Region, Gene>{
 			
 			gene.prepareForReading();
 		}
-			
+						
 		geneIdMap = null;
 		transcriptIdMap = null;
 	}
@@ -49,5 +49,15 @@ public class GeneSet extends TreeMap<Region, Gene>{
 	public Collection<Gene> getGenes(Region region) {
 		
 		return this.subMap(new Region(region.start, region.start), new Region(region.end, region.end)).values();
+	}
+	
+	public Gene getGene(String name) {
+		
+		for (Gene gene : this.values()) {
+			if (name.equalsIgnoreCase(gene.getName())) {
+				return gene;
+			}
+		}
+		return null;
 	}
 }

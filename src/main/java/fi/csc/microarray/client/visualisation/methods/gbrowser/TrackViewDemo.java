@@ -11,6 +11,9 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.net.URL;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -34,7 +37,7 @@ import fi.csc.microarray.client.visualisation.methods.gbrowser.message.Region;
  * parts of the PreviewManager are quite simple:
  * 
  * First preview has to created:
- * 		public  GBrowserPreview createPreview(Region region, File bamData, File bamIndex, File cytobandData, File cytobandRegions, File gtfAnnotation)
+		public GBrowserPreview(URL bamData, URL bamIndex, URL cytobandData, URL cytobandRegions, URL cytobandCoordSystem, URL gtfAnnotation) {
 	
 	When you have created the GBrowserPreview object with the method above, you set it to show
 	correct location in data:
@@ -64,7 +67,6 @@ import fi.csc.microarray.client.visualisation.methods.gbrowser.message.Region;
  * 
  *  And finally useless visualisation should be removed with the following:
  * 		public void removePreview(GBrowserPreview preview);	
- *  However, currently there is a huge memory leak, around 100 megabytes per visualisation.
 
  * 
  * @author klemela
@@ -72,11 +74,12 @@ import fi.csc.microarray.client.visualisation.methods.gbrowser.message.Region;
  */
 public class TrackViewDemo extends JFrame implements ActionListener, ChangeListener{
 
-	private static final File BAM_DATA_FILE;
-	private static final File BAI_DATA_FILE;
-	private static final File CYTOBAND_FILE;
-	private static final File CYTOBAND_REGION_FILE;
-	private static final File GTF_ANNOTATION_FILE;
+	private static URL BAM_DATA_FILE = null;
+	private static URL BAI_DATA_FILE = null;
+	private static URL CYTOBAND_FILE = null;
+	private static URL CYTOBAND_REGION_FILE = null;
+	private static URL CYTOBAND_COORD_SYSTEM_FILE = null;
+	private static URL GTF_ANNOTATION_FILE = null;
 
 	private static final String dataPath;
 
@@ -84,13 +87,18 @@ public class TrackViewDemo extends JFrame implements ActionListener, ChangeListe
 
 		dataPath = System.getProperty("user.home") + "/chipster/ohtu/";
 
-		BAM_DATA_FILE = new File(dataPath + "ohtu-within-chr.bam");
-		BAI_DATA_FILE = new File(dataPath + "ohtu-within-chr.bam.bai");
-		CYTOBAND_FILE = new File(dataPath + "Homo_sapiens.GRCh37.65.cytobands.txt");
-		CYTOBAND_REGION_FILE = new File(dataPath + "Homo_sapiens.GRCh37.65.seq_region.txt");
-		
+		try {
+			BAM_DATA_FILE = new File(dataPath + "ohtu-within-chr.bam").toURI().toURL();
+			BAI_DATA_FILE = new File(dataPath + "ohtu-within-chr.bam.bai").toURI().toURL();
+			CYTOBAND_FILE = new File(dataPath + "Homo_sapiens.GRCh37.66.cytobands.txt").toURI().toURL();
+			CYTOBAND_REGION_FILE = new File(dataPath + "Homo_sapiens.GRCh37.66.seq_region.txt").toURI().toURL();
+			CYTOBAND_COORD_SYSTEM_FILE = new File(dataPath + "Homo_sapiens.GRCh37.66.coord_system.txt").toURI().toURL();
+			
 //ftp://ftp.ensembl.org/pub/release-65/gtf/homo_sapiens/Homo_sapiens.GRCh37.65.gtf.gz
-		GTF_ANNOTATION_FILE = new File(dataPath + "Homo_sapiens.GRCh37.65.gtf");
+			GTF_ANNOTATION_FILE = new File(dataPath + "Homo_sapiens.GRCh37.66.gtf").toURI().toURL();
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		}
 	}
 
 	public static void main(String[] args) throws IOException {
@@ -178,7 +186,12 @@ public class TrackViewDemo extends JFrame implements ActionListener, ChangeListe
 			Chromosome chr = new Chromosome("" + chrSlider.getValue());
 
 			Region region = new Region(start, end, chr);
-			GBrowserPreview preview = previewManager.createPreview(region, BAM_DATA_FILE, BAI_DATA_FILE, CYTOBAND_FILE, CYTOBAND_REGION_FILE, GTF_ANNOTATION_FILE);
+			GBrowserPreview preview = null;
+			try {
+				preview = previewManager.createPreview(region, BAM_DATA_FILE, BAI_DATA_FILE, CYTOBAND_FILE, CYTOBAND_REGION_FILE, CYTOBAND_COORD_SYSTEM_FILE, GTF_ANNOTATION_FILE);
+			} catch (URISyntaxException e1) {
+				e1.printStackTrace();
+			}
 
 			JButton previewButton = new PreviewButton(preview, this);
 
@@ -241,7 +254,11 @@ public class TrackViewDemo extends JFrame implements ActionListener, ChangeListe
 					} else {
 						selection.setBorder(null);
 						showVisualization(null);
-						showVisualization(previewManager.getSplitJComponent(preview, selection.preview));
+						try {
+							showVisualization(previewManager.getSplitJComponent(preview, selection.preview));
+						} catch (URISyntaxException e1) {
+							e1.printStackTrace();
+						}
 					}
 				} else {
 					if (selection != null) {
@@ -249,7 +266,12 @@ public class TrackViewDemo extends JFrame implements ActionListener, ChangeListe
 						selection = null;
 					}
 
-					showVisualization(preview.getJComponent());
+					try {
+						showVisualization(preview.getJComponent());
+					} catch (URISyntaxException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
 				}
 
 			} else if (e.getButton() == MouseEvent.BUTTON3) {

@@ -15,7 +15,6 @@ import java.util.TreeSet;
 
 import fi.csc.microarray.client.visualisation.methods.gbrowser.DataSource;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.View;
-import fi.csc.microarray.client.visualisation.methods.gbrowser.dataFetcher.AreaRequestHandler;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.dataFetcher.Gene;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.drawable.Drawable;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.drawable.RectDrawable;
@@ -39,9 +38,8 @@ public class GeneTrack extends Track {
 	private Color color;
 
 
-	public GeneTrack(View view, DataSource file, Class<? extends AreaRequestHandler> handler,
-	        Color color, long minBpLength, long maxBpLength) {
-		super(view, file, handler);
+	public GeneTrack(View view, DataSource file, Color color, long minBpLength, long maxBpLength) {
+		super(view, file);
 		this.color = color;
 		this.minBpLength = minBpLength;
 		this.maxBpLength = maxBpLength;
@@ -100,9 +98,10 @@ public class GeneTrack extends Track {
 
 		drawables.add(new RectDrawable(rect, c, null));
 		if (isNameVisible(rect)) {
-
-			// TODO fix the extra quote mark in file
-			name = name.replaceAll("\"", "");
+			
+			if (name == null) {
+				name = "n/a";
+			}
 
 			// draw name to leftmost visible part of the gene rectangle
 			drawTextAboveRectangle(name, drawables, rect, 10);
