@@ -4,6 +4,9 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,7 +35,7 @@ public class CytobandDemo extends JFrame implements AreaResultListener {
 
 	private static final int THICKNESS = 11;
 	private static final int MARGIN = 50;
-	
+
 	private static final int WIN_WIDTH = 1280;
 
 	CytobandHandlerThread dataThread;
@@ -63,49 +66,57 @@ public class CytobandDemo extends JFrame implements AreaResultListener {
 		//Init Chipster data layer
 		CytobandDataSource file = null;
 		try {
-			
+
 			/*
 			 *  Download and extract following files
 			 *  
 			 *  For human:
 			 *  ftp://ftp.ensembl.org/pub/release-65/mysql/homo_sapiens_core_65_37/karyotype.txt.gz
 			 *  ftp://ftp.ensembl.org/pub/release-65/mysql/homo_sapiens_core_65_37/seq_region.txt.gz
+			 *  ftp://ftp.ensembl.org/pub/release-65/mysql/homo_sapiens_core_65_37/coord_system.txt.gz
 			 *  
 			 *  For rat:
 			 *  ftp://ftp.ensembl.org/pub/release-65/mysql/rattus_norvegicus_core_65_34/seq_region.txt.gz
 			 *  ftp://ftp.ensembl.org/pub/release-65/mysql/rattus_norvegicus_core_65_34/karyotype.txt.gz
+			 *  ftp://ftp.ensembl.org/pub/release-65/mysql/rattus_norvegicus_core_65_34/coord_system.txt.gz
 			 *  
-			 *  and adjust this paths correspondingly:
+			 *  and adjust these paths correspondingly:
 			 */
-			
+
 			String dataPath = System.getProperty("user.home") + "/chipster/ohtu/";
 
-			File CYTOBAND_FILE = new File(dataPath + "Homo_sapiens.GRCh37.65.cytobands.txt");
-			File CYTOBAND_REGION_FILE = new File(dataPath + "Homo_sapiens.GRCh37.65.seq_region.txt");
-			
-			file = new CytobandDataSource(CYTOBAND_FILE, CYTOBAND_REGION_FILE);
+			URL CYTOBAND_FILE = new File(dataPath + "Homo_sapiens.GRCh37.65.cytobands.txt").toURI().toURL();
+			URL CYTOBAND_REGION_FILE = new File(dataPath + "Homo_sapiens.GRCh37.65.seq_region.txt").toURI().toURL();
+			URL CYTOBAND_COORD_FILE = new File(dataPath + "Homo_sapiens.GRCh37.65.coord_system.txt").toURI().toURL();
+
+			file = new CytobandDataSource(CYTOBAND_FILE, CYTOBAND_REGION_FILE, CYTOBAND_COORD_FILE);
+
 		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		} catch (URISyntaxException e) {
 			e.printStackTrace();
 		}
 
 		dataThread = new CytobandHandlerThread(file, areaRequestQueue, this);
 		dataThread.start();
-		
+
 		requestData();
 	}
-	
+
 	public void requestData() {
-		
+
 		areaRequestQueue.add(new AreaRequest(
 				new Region(0l, 270000000l, new Chromosome("1")), 
 				new HashSet<ColumnType>(Arrays.asList(new ColumnType[] {ColumnType.VALUE })),
 				new FsfStatus()));
-		
+
 		areaRequestQueue.add(new AreaRequest(
 				new Region(0l, 270000000l, new Chromosome("2")), 
 				new HashSet<ColumnType>(Arrays.asList(new ColumnType[] {ColumnType.VALUE })),
 				new FsfStatus()));
-		
+
 		areaRequestQueue.add(new AreaRequest(
 				new Region(0l, 270000000l, new Chromosome("X")), 
 				new HashSet<ColumnType>(Arrays.asList(new ColumnType[] {ColumnType.VALUE })),
@@ -126,20 +137,20 @@ public class CytobandDemo extends JFrame implements AreaResultListener {
 		boolean firstGap = true;
 
 		Iterator<Cytoband> cbandIter = cbands.iterator();
-		
+
 		//Only used to put different chromosomes to different rows
 		Set<Chromosome> chrs = new HashSet<Chromosome>();
-		
+
 		while (cbandIter.hasNext()) {
 
 			Cytoband cband = cbandIter.next();
-			
+
 			Cytoband.Stain stain = cband.getStain();
 			Color stainColor = stainColors.get(stain);
 			String text = (String) cband.getBand();
-			
+
 			chrs.add(cband.getRegion().start.chr);
-			
+
 			int x = bpToDisplay(cband.getRegion().start.bp);
 			int width = bpToDisplay(cband.getRegion().getLength());	
 			int y = chrs.size() * (MARGIN + THICKNESS * 3) + MARGIN;
@@ -152,10 +163,10 @@ public class CytobandDemo extends JFrame implements AreaResultListener {
 
 				g.setColor(Color.black);		
 				g.drawRect(x, y, width, THICKNESS);
-				
-				
+
+
 				final int CHAR_WIDTH = 7;
-				
+
 				if (width > text.length() * CHAR_WIDTH) {
 
 					g.setColor(Color.black);
@@ -195,13 +206,13 @@ public class CytobandDemo extends JFrame implements AreaResultListener {
 
 	@Override
 	public void processAreaResult(AreaResult areaResult) {
-				
+
 		for (RegionContent content : areaResult.getContents()) {
 
 			Cytoband cband = (Cytoband) content.values.get(ColumnType.VALUE);
 			cbands.add(cband);
 		}
-		
+
 		this.repaint();
 	}
 }

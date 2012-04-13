@@ -90,12 +90,29 @@ public class TrackViewDemo extends JFrame implements ActionListener, ChangeListe
 		try {
 			BAM_DATA_FILE = new File(dataPath + "ohtu-within-chr.bam").toURI().toURL();
 			BAI_DATA_FILE = new File(dataPath + "ohtu-within-chr.bam.bai").toURI().toURL();
-			CYTOBAND_FILE = new File(dataPath + "Homo_sapiens.GRCh37.66.cytobands.txt").toURI().toURL();
-			CYTOBAND_REGION_FILE = new File(dataPath + "Homo_sapiens.GRCh37.66.seq_region.txt").toURI().toURL();
-			CYTOBAND_COORD_SYSTEM_FILE = new File(dataPath + "Homo_sapiens.GRCh37.66.coord_system.txt").toURI().toURL();
 			
-//ftp://ftp.ensembl.org/pub/release-65/gtf/homo_sapiens/Homo_sapiens.GRCh37.65.gtf.gz
-			GTF_ANNOTATION_FILE = new File(dataPath + "Homo_sapiens.GRCh37.66.gtf").toURI().toURL();
+			/*
+			 *  Download and extract following files
+			 *  
+			 *  For human:
+			 *  ftp://ftp.ensembl.org/pub/release-65/mysql/homo_sapiens_core_65_37/karyotype.txt.gz
+			 *  ftp://ftp.ensembl.org/pub/release-65/mysql/homo_sapiens_core_65_37/seq_region.txt.gz
+			 *  ftp://ftp.ensembl.org/pub/release-65/mysql/homo_sapiens_core_65_37/coord_system.txt.gz
+			 *  
+			 *  For rat:
+			 *  ftp://ftp.ensembl.org/pub/release-65/mysql/rattus_norvegicus_core_65_34/seq_region.txt.gz
+			 *  ftp://ftp.ensembl.org/pub/release-65/mysql/rattus_norvegicus_core_65_34/karyotype.txt.gz
+			 *  ftp://ftp.ensembl.org/pub/release-65/mysql/rattus_norvegicus_core_65_34/coord_system.txt.gz
+			 *  
+			 *  and adjust these paths correspondingly:
+			 */
+			
+			CYTOBAND_FILE = new File(dataPath + "Homo_sapiens.GRCh37.65.cytobands.txt").toURI().toURL();
+			CYTOBAND_REGION_FILE = new File(dataPath + "Homo_sapiens.GRCh37.65.seq_region.txt").toURI().toURL();
+			CYTOBAND_COORD_SYSTEM_FILE = new File(dataPath + "Homo_sapiens.GRCh37.65.coord_system.txt").toURI().toURL();
+			
+			//ftp://ftp.ensembl.org/pub/release-65/gtf/homo_sapiens/Homo_sapiens.GRCh37.65.gtf.gz
+			GTF_ANNOTATION_FILE = new File(dataPath + "Homo_sapiens.GRCh37.65.gtf").toURI().toURL();
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
 		}
@@ -188,6 +205,7 @@ public class TrackViewDemo extends JFrame implements ActionListener, ChangeListe
 			Region region = new Region(start, end, chr);
 			GBrowserPreview preview = null;
 			try {
+				// set last argument 'gtfAnnotation' null if there isn't data available
 				preview = previewManager.createPreview(region, BAM_DATA_FILE, BAI_DATA_FILE, CYTOBAND_FILE, CYTOBAND_REGION_FILE, CYTOBAND_COORD_SYSTEM_FILE, GTF_ANNOTATION_FILE);
 			} catch (URISyntaxException e1) {
 				e1.printStackTrace();

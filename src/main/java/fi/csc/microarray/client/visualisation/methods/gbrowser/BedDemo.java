@@ -4,6 +4,9 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Queue;
@@ -45,12 +48,20 @@ public class BedDemo extends JFrame implements AreaResultListener {
 		 */
 
 		String dataPath = System.getProperty("user.home") + "/chipster/ohtu/";
-		File BED_FILE = new File(dataPath + "peaks.bed");
+		URL BED_FILE = null;
+		try {
+			BED_FILE = new File(dataPath + "peaks.bed").toURI().toURL();
+		} catch (MalformedURLException e1) {
+			e1.printStackTrace();
+		}
 
 		DataSource bedDataSource = null;
+		
 		try {
-			bedDataSource = new ChunkDataSource(BED_FILE, new BEDParser());
+			bedDataSource = new ChunkDataSource(BED_FILE, new BEDParser(), null);
 		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (URISyntaxException e) {
 			e.printStackTrace();
 		}
 

@@ -4,6 +4,9 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -42,14 +45,18 @@ public class PairedEndDemo extends JFrame implements AreaResultListener {
 			
 			String dataPath = System.getProperty("user.home") + "/chipster/ohtu/";
 
-			File BAM_DATA_FILE = new File(dataPath + "ohtu-within-chr.bam");
-			File BAI_DATA_FILE = new File(dataPath + "ohtu-within-chr.bam.bai");
+			URL BAM_DATA_FILE = new File(dataPath + "ohtu-within-chr.bam").toURI().toURL();
+			URL BAI_DATA_FILE = new File(dataPath + "ohtu-within-chr.bam.bai").toURI().toURL();
 
 			// Adjust these paths to point to the demo data			
 			file = new SAMDataSource(BAM_DATA_FILE, BAI_DATA_FILE);
 			
 			
 		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		} catch (URISyntaxException e) {
 			e.printStackTrace();
 		}
 

@@ -82,8 +82,11 @@ public class PreviewManager {
 					TrackFactory.addCytobandTracks(plot, new CytobandDataSource(cytobandData, cytobandRegions, cytobandCoordSystem));
 
 					TrackFactory.addTitleTrack(plot, "Annotations");		
-					TrackFactory.addGeneTracks(plot, new LineDataSource(gtfAnnotations, GtfHandlerThread.class));
-					TrackFactory.addThickSeparatorTrack(plot);
+					
+					if (gtfAnnotations != null) {
+						TrackFactory.addGeneTracks(plot, new LineDataSource(gtfAnnotations, GtfHandlerThread.class));
+						TrackFactory.addThickSeparatorTrack(plot);
+					}
 
 //					TrackGroup controlGroup = TrackFactory.addReadTracks(
 //							plot, 
@@ -281,11 +284,17 @@ public class PreviewManager {
 			boolean fileNotFoundFail = false;
 			for (URL url : urls) {
 				File file = null;
+				
+				if (url == null) {
+					//Propably intentional
+					continue;
+				}
+
 				try {
 					file = new File(url.toURI());
 				} catch (URISyntaxException e) {
 					fileNotFoundFail = true;
-				}
+				} 
 				if (!file.exists()) {
 					System.err.println("File not found: " + file);
 					fileNotFoundFail = true;
@@ -313,6 +322,17 @@ public class PreviewManager {
 	
 	private List<GBrowserPreview> previews = new LinkedList<GBrowserPreview>();
 	
+	/**
+	 * @param region
+	 * @param bamData
+	 * @param bamIndex
+	 * @param cytobandData
+	 * @param cytobandRegions
+	 * @param cytobandCoordSystem
+	 * @param gtfAnnotation null allowed if data isn't available
+	 * @return
+	 * @throws URISyntaxException
+	 */
 	public  GBrowserPreview createPreview(Region region, URL bamData, URL bamIndex, URL cytobandData, URL cytobandRegions, URL cytobandCoordSystem, URL gtfAnnotation) throws URISyntaxException {
 		GBrowserPreview preview = new GBrowserPreview(bamData, bamIndex, cytobandData, cytobandRegions, cytobandCoordSystem, gtfAnnotation);
 		preview.setRegion(region);
