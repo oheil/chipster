@@ -4,6 +4,7 @@ import java.awt.BorderLayout;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
+import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
@@ -142,9 +143,19 @@ public class PreviewManager {
 
 								public void run() {
 									if (plot != null) {
-										Graphics2D g2 = preview.createGraphics();					
-										g2.setClip(0, 0, PREVIEW_WIDTH, PREVIEW_HEIGHT);			
-										g2.clearRect(0, 0, PREVIEW_WIDTH, PREVIEW_HEIGHT);
+										Graphics2D g2 = preview.createGraphics();		
+										
+										Rectangle plotBounds = plot.chartPanel.getBounds();
+										
+										if (plotBounds.width == 0 && plotBounds.height == 0) {
+
+											g2.setClip(0, 0, PREVIEW_WIDTH, PREVIEW_HEIGHT);			
+											g2.clearRect(0, 0, PREVIEW_WIDTH, PREVIEW_HEIGHT);
+
+										} else {
+											g2.setClip(plotBounds);			
+											g2.clearRect(0, 0, g2.getClipBounds().width, g2.getClipBounds().height);
+										}
 
 										plot.draw(g2, g2.getClipBounds(), null, null, null);
 										
