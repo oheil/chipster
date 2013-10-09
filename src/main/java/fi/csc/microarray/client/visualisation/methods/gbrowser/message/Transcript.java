@@ -76,4 +76,8 @@ public class Transcript extends TreeSet<Exon> implements Comparable<Transcript> 
 	public Collection<Exon> getExons() {
 		return this;
 	}
+
+	public Gene getGene() {
+		return gene;
+	}
 }

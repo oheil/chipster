@@ -36,7 +36,7 @@ public class Exon implements Comparable<Exon> {
 	
 	private Feature getFeature(String id) {
 		for (Feature feature : Feature.values()) {
-			if (feature.getId() != null && feature.getId().equals(id)) {
+			if (feature.getId() != null && feature.getId().toLowerCase().equals(id.toLowerCase())) {
 				return feature;
 			}
 		}
@@ -45,8 +45,11 @@ public class Exon implements Comparable<Exon> {
 	
 	public Exon(Region region, String feature, int exonNumber) {
 		this.region = region;
-		this.feature = getFeature(feature);
 		this.exonNumber = exonNumber;
+		this.feature = getFeature(feature);
+		if (this.feature == Feature.UNRECOGNIZED) {
+			System.err.println(this.getClass().getName() + ": gene feature not recognised: " + feature);
+		}
 	}
 
 	public Exon(Region region, String feature, int exonNumber,

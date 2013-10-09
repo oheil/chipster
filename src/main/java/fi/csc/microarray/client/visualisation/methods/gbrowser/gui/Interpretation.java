@@ -10,6 +10,8 @@ import fi.csc.microarray.client.visualisation.methods.gbrowser.fileIndex.BamData
 import fi.csc.microarray.client.visualisation.methods.gbrowser.fileIndex.BamToCoverageConversion;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.fileIndex.BamToCoverageEstimateConversion;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.fileIndex.BamToDetailsConversion;
+import fi.csc.microarray.client.visualisation.methods.gbrowser.fileIndex.EnsemblRestReferenceConversion;
+import fi.csc.microarray.client.visualisation.methods.gbrowser.fileIndex.EnsemblRestToFeatureConversion;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.fileIndex.GtfToFeatureConversion;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.fileIndex.IndexedFastaConversion;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.gui.AnnotationManager.Genome;
@@ -20,6 +22,7 @@ import fi.csc.microarray.client.visualisation.methods.gbrowser.runtimeIndex.Chro
 import fi.csc.microarray.client.visualisation.methods.gbrowser.runtimeIndex.CnaConversion;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.runtimeIndex.CnaLineParser;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.runtimeIndex.CytobandConversion;
+import fi.csc.microarray.client.visualisation.methods.gbrowser.runtimeIndex.DataThread;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.runtimeIndex.FileLineConversion;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.runtimeIndex.GeneSearchConversion;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.runtimeIndex.GtfLineParser;
@@ -54,6 +57,9 @@ public class Interpretation {
 			this.isToggleable = toggleable;
 		}
 	}
+
+	private static String server = "http://beta.rest.ensembl.org";
+	private static String species = "human";
 	
 	private TrackType type;
 	private DataUrl primaryData;
@@ -122,22 +128,22 @@ public class Interpretation {
 
 		Genome genome = browser.getGenome();
 
-		GtfToFeatureConversion gtfDataThread = getAnnotationDataThread(browser);
+		DataThread annotationDataThread = getAnnotationDataThread(browser);
 
-		if (gtfDataThread != null) {
+		if (annotationDataThread != null) {
 			//Init gene search
 			DataUrl geneUrl = browser.getAnnotationManager().getAnnotation(
 					genome, AnnotationManager.AnnotationType.GENE_CHRS).getUrl();
 
 			GeneSearchConversion geneRequestHandler = new GeneSearchConversion(geneUrl, browser);
 
-			return new GeneIndexActions(browser.getPlot().getDataView().getQueueManager(), gtfDataThread, geneRequestHandler);
+			return new GeneIndexActions(browser.getPlot().getDataView().getQueueManager(), annotationDataThread, geneRequestHandler);
 		} 
 		
 		throw new IllegalStateException("Can't initialize gene search without gtf data");
 	}	
 	
-	public static GtfToFeatureConversion getAnnotationDataThread(GBrowser browser) {
+	public static DataThread getAnnotationDataThread(GBrowser browser) {
 		
 		Genome genome = browser.getGenome();
 		
@@ -145,16 +151,24 @@ public class Interpretation {
 		DataUrl gtfTabixUrl = browser.getAnnotationUrl(genome, AnnotationManager.AnnotationType.GTF_TABIX);
 		DataUrl gtfIndexUrl = browser.getAnnotationUrl(genome, AnnotationManager.AnnotationType.GTF_TABIX_INDEX);
 		
-		GtfToFeatureConversion gtfDataThread = null;
+		DataThread annotationDataThread = null;
 
 		if (gtfUrl != null) {			
-			gtfDataThread = new GtfToFeatureConversion(gtfUrl, null, browser);
+			annotationDataThread = new GtfToFeatureConversion(gtfUrl, null, browser);
 			
 		} else 	if (gtfTabixUrl != null && gtfIndexUrl != null) {
-			gtfDataThread = new GtfToFeatureConversion(gtfTabixUrl, gtfIndexUrl, browser);
+			annotationDataThread = new GtfToFeatureConversion(gtfTabixUrl, gtfIndexUrl, browser);
 		}
 
-		return gtfDataThread;
+		try {
+			DataUrl restUrl = new DataUrl(new URL(server), server);
+			annotationDataThread = new EnsemblRestToFeatureConversion(restUrl, species, browser);
+		} catch (URISyntaxException | IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		return annotationDataThread;
 	}
 	
 	public static BedTabixToRegionConversion getRepeatDataThread(GBrowser browser) {
@@ -171,18 +185,27 @@ public class Interpretation {
 		return null;
 	}
 	
-	public static IndexedFastaConversion getReferenceDataThread(GBrowser browser) {
+	public static DataThread getReferenceDataThread(GBrowser browser) {
 		
 		Genome genome = browser.getGenome();
 
 		DataUrl fastaUrl = browser.getAnnotationUrl(genome, AnnotationManager.AnnotationType.REFERENCE);
 		DataUrl fastaIndexUrl = browser.getAnnotationUrl(genome, AnnotationManager.AnnotationType.REFERENCE_INDEX);
 
-		IndexedFastaConversion refSeqDataThread = null;
+		DataThread refSeqDataThread = null;
 		
 		if (fastaUrl != null && fastaIndexUrl != null) {
 			refSeqDataThread = new IndexedFastaConversion(fastaUrl, fastaIndexUrl, browser);
 		}
+		
+		try {
+			DataUrl restUrl = new DataUrl(new URL(server), server);
+			refSeqDataThread = new EnsemblRestReferenceConversion(restUrl, species, browser);
+		} catch (URISyntaxException | IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
 		
 		return refSeqDataThread;
 	}

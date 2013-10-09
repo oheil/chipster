@@ -170,7 +170,7 @@ public class TranscriptTrack extends Track {
 						c = null;
 						break;
 					default:
-						System.err.println("Gene description not recognised: " + feature);
+						//Feature unrecognized
 						c = Color.gray;
 					}
 
@@ -190,13 +190,27 @@ public class TranscriptTrack extends Track {
 			Collections.sort(geneDrawables, new Comparator<Drawable>() {
 				public int compare(Drawable one, Drawable other) {
 
-					if (one.color.equals(PartColor.CDS.c) && other.color.equals(PartColor.UTR.c)) {
+					boolean oneIsCds = one.color.equals(PartColor.CDS.c);
+					boolean otherIsCds = other.color.equals(PartColor.CDS.c);
+					
+					boolean oneIsUtr = one.color.equals(PartColor.UTR.c);
+					boolean otherIsUtr = other.color.equals(PartColor.UTR.c);
+					
+					if (oneIsCds && otherIsUtr) {
 						return 1;
-					} else if (one.color.equals(PartColor.UTR.c) && other.color.equals(PartColor.CDS.c)) {
+					} else if (oneIsUtr && otherIsCds) {
 						return -1;
-					} else {
+					} else if (one.color.equals(other.color)) {
 						return 0;
+					} else if (oneIsCds || oneIsUtr) {
+						//other is neither of these
+						return 1;
+					} else if (otherIsCds || otherIsUtr) {
+						//one is neither of these
+						return -1;
 					}
+					//shouldn't end up here?
+					return 0;
 				}
 			});
 

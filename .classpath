@@ -72,5 +72,6 @@
 	<classpathentry kind="lib" path="ext/lib/picard-1.89.jar"/>
 	<classpathentry kind="lib" path="ext/lib/sam-1.89.jar"/>
 	<classpathentry kind="lib" path="ext/lib/miglayout-4.0-swing.jar"/>
+	<classpathentry kind="lib" path="ext/lib/quick-json-1.0.2.3.jar"/>
 	<classpathentry kind="output" path="bin/eclipse"/>
 </classpath>

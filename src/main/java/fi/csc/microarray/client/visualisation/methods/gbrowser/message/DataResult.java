@@ -1,5 +1,6 @@
 package fi.csc.microarray.client.visualisation.methods.gbrowser.message;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 

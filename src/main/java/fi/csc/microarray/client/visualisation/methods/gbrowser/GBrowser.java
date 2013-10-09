@@ -20,6 +20,7 @@ import javax.swing.SwingUtilities;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.fileIndex.BamToCoverageConversion;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.fileIndex.BamToCoverageEstimateConversion;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.fileIndex.BamToDetailsConversion;
+import fi.csc.microarray.client.visualisation.methods.gbrowser.fileIndex.EnsemblRestToFeatureConversion;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.fileIndex.GtfToFeatureConversion;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.gui.AnnotationManager;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.gui.AnnotationManager.AnnotationType;
@@ -220,8 +221,8 @@ public class GBrowser {
 				break;
 			case GTF:
 
-				GtfToFeatureConversion gtfConversion = interpretation.getGtfDataThread(this);
-				TrackGroup geneGroup = new AnnotationTrackGroup(dataView, gtfConversion, null, true);
+				GtfToFeatureConversion annotationConversion = interpretation.getGtfDataThread(this);
+				TrackGroup geneGroup = new AnnotationTrackGroup(dataView, annotationConversion, null, true);
 				
 				analyses.setScrollEnabled(true);
 				geneGroup.setSettingsEnabled(true);
@@ -311,12 +312,12 @@ public class GBrowser {
 	private void createAnnotationTracks(GBrowserView dataView,
 			ScrollGroup annotations) {
 		
-		DataThread gtfRequestHandler = Interpretation.getAnnotationDataThread(this);
-		DataThread repeatRequestHandler = Interpretation.getRepeatDataThread(this);
+		DataThread annotationDataThread = Interpretation.getAnnotationDataThread(this);
+		DataThread repeatDataThread = Interpretation.getRepeatDataThread(this);
 
 		gia = Interpretation.getGeneSearchDataThread(this);
 
-		TrackGroup geneGroup = new AnnotationTrackGroup(dataView, gtfRequestHandler, repeatRequestHandler, false);
+		TrackGroup geneGroup = new AnnotationTrackGroup(dataView, annotationDataThread, repeatDataThread, false);
 		annotations.addTrackGroup(geneGroup);
 	}
 
