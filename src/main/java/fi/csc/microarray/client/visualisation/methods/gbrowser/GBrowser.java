@@ -31,6 +31,7 @@ import fi.csc.microarray.client.visualisation.methods.gbrowser.gui.GBrowserPlot;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.gui.GBrowserSettings;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.gui.GBrowserView;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.gui.GeneIndexActions;
+import fi.csc.microarray.client.visualisation.methods.gbrowser.gui.GeneSearchProvider;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.gui.Interpretation;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.gui.Interpretation.TrackType;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.gui.ScrollGroup;
@@ -73,7 +74,7 @@ public class GBrowser {
 
 	private AnnotationManager annotationManager;
 
-	private GeneIndexActions gia;
+	private GeneSearchProvider gia;
 
 	private ViewLimiter viewLimiter;
 	protected boolean geneSearchDone;
@@ -393,7 +394,7 @@ public class GBrowser {
 		cl.show(plotPanel, PLOTPANEL);
 	}
 
-	private GeneIndexActions getGeneIndexActions() {
+	private GeneSearchProvider getGeneSearchProvider() {
 
 		if (gia == null) {
 			showDialog("Gene search failed", "Gene search is not initialized, is annotation data missing?", null, true, false, true, false);
@@ -448,7 +449,7 @@ public class GBrowser {
 			}
 		});
 
-		getGeneIndexActions().requestLocation(gene, new GeneIndexActions.GeneLocationListener() {
+		getGeneSearchProvider().requestLocation(gene, new GeneIndexActions.GeneLocationListener() {
 
 			@Override
 			public void geneLocation(Region geneLocation) {

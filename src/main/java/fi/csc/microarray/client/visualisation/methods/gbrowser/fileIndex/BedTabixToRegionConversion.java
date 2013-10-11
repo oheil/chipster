@@ -1,4 +1,4 @@
-package fi.csc.microarray.client.visualisation.methods.gbrowser.runtimeIndex;
+package fi.csc.microarray.client.visualisation.methods.gbrowser.fileIndex;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -8,12 +8,13 @@ import java.util.List;
 import org.broad.tribble.readers.TabixReader;
 
 import fi.csc.microarray.client.visualisation.methods.gbrowser.GBrowser;
-import fi.csc.microarray.client.visualisation.methods.gbrowser.fileIndex.TabixDataSource;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.gui.DataUrl;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.message.DataRequest;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.message.DataResult;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.message.Feature;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.message.Region;
+import fi.csc.microarray.client.visualisation.methods.gbrowser.runtimeIndex.BedLineParser;
+import fi.csc.microarray.client.visualisation.methods.gbrowser.runtimeIndex.DataThread;
 
 public class BedTabixToRegionConversion extends DataThread {
 

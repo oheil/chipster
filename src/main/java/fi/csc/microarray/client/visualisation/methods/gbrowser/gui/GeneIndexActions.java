@@ -1,11 +1,5 @@
 package fi.csc.microarray.client.visualisation.methods.gbrowser.gui;
 
-/**
- * Gene indexing tools. 
- * 
- * @author Petri Klemelä
- */
-
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,7 +21,7 @@ import fi.csc.microarray.client.visualisation.methods.gbrowser.runtimeIndex.Data
  * @author klemela
  *
  */
-public class GeneIndexActions implements DataResultListener {
+public class GeneIndexActions implements DataResultListener, GeneSearchProvider {
 
 	public interface GeneLocationListener {
 		public void geneLocation(Region geneRegion);

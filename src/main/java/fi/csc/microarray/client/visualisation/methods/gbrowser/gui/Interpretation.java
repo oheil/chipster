@@ -1,6 +1,7 @@
 package fi.csc.microarray.client.visualisation.methods.gbrowser.gui;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.TreeSet;
@@ -17,7 +18,6 @@ import fi.csc.microarray.client.visualisation.methods.gbrowser.fileIndex.Indexed
 import fi.csc.microarray.client.visualisation.methods.gbrowser.gui.AnnotationManager.Genome;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.message.Chromosome;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.runtimeIndex.BedLineParser;
-import fi.csc.microarray.client.visualisation.methods.gbrowser.runtimeIndex.BedTabixToRegionConversion;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.runtimeIndex.ChromosomeBinarySearch;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.runtimeIndex.CnaConversion;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.runtimeIndex.CnaLineParser;
@@ -121,24 +121,33 @@ public class Interpretation {
 
 			return new CytobandConversion(cytobandUrl, browser);
 		}
-		throw new IllegalStateException("Cytoband url is null");
+		//throw new IllegalStateException("Cytoband url is null");
+		return null;
 	}
 	
-	public static GeneIndexActions getGeneSearchDataThread(GBrowser browser) {
+	public static GeneSearchProvider getGeneSearchDataThread(GBrowser browser) {
 
 		Genome genome = browser.getGenome();
 
-		DataThread annotationDataThread = getAnnotationDataThread(browser);
-
-		if (annotationDataThread != null) {
-			//Init gene search
-			DataUrl geneUrl = browser.getAnnotationManager().getAnnotation(
-					genome, AnnotationManager.AnnotationType.GENE_CHRS).getUrl();
-
-			GeneSearchConversion geneRequestHandler = new GeneSearchConversion(geneUrl, browser);
-
-			return new GeneIndexActions(browser.getPlot().getDataView().getQueueManager(), annotationDataThread, geneRequestHandler);
-		} 
+//		DataThread annotationDataThread = getAnnotationDataThread(browser);
+//
+//		if (annotationDataThread != null) {
+//			//Init gene search
+//			DataUrl geneUrl = browser.getAnnotationManager().getAnnotation(
+//					genome, AnnotationManager.AnnotationType.GENE_CHRS).getUrl();
+//
+//			GeneSearchConversion geneRequestHandler = new GeneSearchConversion(geneUrl, browser);
+//
+//			return new GeneIndexActions(browser.getPlot().getDataView().getQueueManager(), annotationDataThread, geneRequestHandler);
+//		}
+		
+		try {
+			DataUrl serverUrl = new DataUrl(new URL(server), server);
+			return new EnsemblRestGeneSearch(serverUrl, species);
+		} catch (MalformedURLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
 		throw new IllegalStateException("Can't initialize gene search without gtf data");
 	}	
@@ -171,15 +180,23 @@ public class Interpretation {
 		return annotationDataThread;
 	}
 	
-	public static BedTabixToRegionConversion getRepeatDataThread(GBrowser browser) {
+	public static DataThread getRepeatDataThread(GBrowser browser) {
 		
-		Genome genome = browser.getGenome();
-
-		DataUrl repeatUrl = browser.getAnnotationUrl(genome, AnnotationManager.AnnotationType.REPEAT);
-		DataUrl repeatIndexUrl = browser.getAnnotationUrl(genome, AnnotationManager.AnnotationType.REPEAT_INDEX);
-					
-		if (repeatUrl != null && repeatIndexUrl != null) {							
-			return new BedTabixToRegionConversion(repeatUrl, repeatIndexUrl, browser);
+//		Genome genome = browser.getGenome();
+//
+//		DataUrl repeatUrl = browser.getAnnotationUrl(genome, AnnotationManager.AnnotationType.REPEAT);
+//		DataUrl repeatIndexUrl = browser.getAnnotationUrl(genome, AnnotationManager.AnnotationType.REPEAT_INDEX);
+//					
+//		if (repeatUrl != null && repeatIndexUrl != null) {							
+//			return new BedTabixToRegionConversion(repeatUrl, repeatIndexUrl, browser);
+//		}
+		
+		try {
+			DataUrl restUrl = new DataUrl(new URL(server), server);
+			return new EnsemblRestReferenceConversion(restUrl, species, browser);
+		} catch (URISyntaxException | IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 		
 		return null;

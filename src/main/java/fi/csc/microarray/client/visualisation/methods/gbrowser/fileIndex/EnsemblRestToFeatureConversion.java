@@ -10,7 +10,6 @@ import java.util.Map;
 
 import fi.csc.microarray.client.visualisation.methods.gbrowser.GBrowser;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.gui.DataUrl;
-import fi.csc.microarray.client.visualisation.methods.gbrowser.message.Chromosome;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.message.DataRequest;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.message.DataResult;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.message.DataType;
@@ -149,23 +148,9 @@ public class EnsemblRestToFeatureConversion extends DataThread {
 	    	case "exon":
 	    	case "cds":
 
-	    		String startString = map.get("start");
-	    		String endString = map.get("end");
-	    		String chrString = map.get("seq_region_name");
-	    		String strandString = map.get("strand");
-	    		Strand strand = null;
-	    		if ("1".equals(strandString)) {
-	    			strand = Strand.FORWARD;
-	    		}
-	    		if ("-1".equals(strandString)) {
-	    			strand = Strand.REVERSE;
-	    		}
-
-	    		long start = Long.parseLong(startString);
-	    		long end = Long.parseLong(endString);
-	    		Chromosome chr = new Chromosome(chrString);
-
-	    		Region region = new Region(start, end, chr, strand);
+	    		Region region = EnsemblRestApiClient.getRegion(map);
+	    		
+	    		region.strand = EnsemblRestApiClient.getStrand(map);
 
 	    		String parentId = (String) map.get("Parent");
 	    		String exonNumberString = (String) map.get("rank");

@@ -33,7 +33,7 @@ import fi.csc.microarray.util.IOUtils;
  * the folder structure of the public file broker urls. The contents file describes what
  * annotation data files we have available at the annotation repository.
  * 
- * @author Petri Klemelä, Taavi Hupponen
+ * @author Petri Klemela, Taavi Hupponen
  * 
  */
 public class AnnotationManager {
@@ -124,7 +124,7 @@ public class AnnotationManager {
 		}
 	}
 
-	public class Genome implements Comparable<Genome> {
+	public static class Genome implements Comparable<Genome> {
 		public String speciesId;
 		public String versionId;
 		public String displaySpecies;
@@ -172,7 +172,6 @@ public class AnnotationManager {
 			//Eclipse generated implementation
 			final int prime = 31;
 			int result = 1;
-			result = prime * result + getOuterType().hashCode();
 			result = prime * result
 					+ ((speciesId == null) ? 0 : speciesId.hashCode());
 			result = prime * result
@@ -190,10 +189,6 @@ public class AnnotationManager {
 			} else {
 				return versionComparison;
 			}
-		}
-
-		private AnnotationManager getOuterType() {
-			return AnnotationManager.this;
 		}
 	}
 	

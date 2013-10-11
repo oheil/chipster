@@ -6,6 +6,8 @@ import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -29,6 +31,8 @@ import javax.swing.border.TitledBorder;
 import org.jdesktop.swingx.JXHyperlink;
 
 import fi.csc.microarray.client.visualisation.methods.gbrowser.GBrowser;
+import fi.csc.microarray.client.visualisation.methods.gbrowser.fileIndex.EnsemblRestApiClient;
+import fi.csc.microarray.client.visualisation.methods.gbrowser.fileIndex.EnsemblRestApiClient.Species;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.gui.AnnotationManager.AnnotationType;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.gui.AnnotationManager.Genome;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.gui.GBrowserPlot.ReadScale;
@@ -38,6 +42,7 @@ import fi.csc.microarray.client.visualisation.methods.gbrowser.track.AnnotationT
 import fi.csc.microarray.client.visualisation.methods.gbrowser.track.SampleTrackGroup;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.track.Selectable;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.track.TrackGroup;
+import fi.csc.microarray.client.visualisation.methods.gbrowser.util.GBrowserException;
 import fi.csc.microarray.util.LinkUtil;
 
 /**
@@ -365,7 +370,23 @@ public class GBrowserSettings implements ActionListener, RegionListener {
 			genomeBox = new JComboBox<Genome>();
 			
 			// genome
-			Collection<Genome> genomes = browser.getAnnotationManager().getGenomes();
+			//Collection<Genome> genomes = browser.getAnnotationManager().getGenomes();
+			
+			List<Genome> genomes = new LinkedList<>();
+			
+			try {
+				List<Species> speciesList = EnsemblRestApiClient.getSpecies(new DataUrl(new URL("http://beta.rest.ensembl.org"), "Ensembl REST API"));
+								
+				for (Species species : speciesList) {
+					Genome genome = new Genome(species.getDisplayName(), species.getRelease());
+					genomes.add(genome);
+				}
+				
+			} catch (GBrowserException | IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
 			for (Genome genome : genomes) {
 				genomeBox.addItem(genome);
 			}
