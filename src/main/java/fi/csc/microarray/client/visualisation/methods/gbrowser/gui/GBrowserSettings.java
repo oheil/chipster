@@ -6,9 +6,7 @@ import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -378,7 +376,8 @@ public class GBrowserSettings implements ActionListener, RegionListener {
 				List<Species> speciesList = EnsemblRestApiClient.getSpecies(new DataUrl(new URL("http://beta.rest.ensembl.org"), "Ensembl REST API"));
 								
 				for (Species species : speciesList) {
-					Genome genome = new Genome(species.getDisplayName(), species.getRelease());
+					Genome genome = new Genome(species.getName(), species.getRelease());
+					genome.displaySpecies = species.getDisplayName();
 					genomes.add(genome);
 				}
 				

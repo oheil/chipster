@@ -24,7 +24,6 @@ import fi.csc.microarray.client.visualisation.methods.gbrowser.runtimeIndex.CnaL
 import fi.csc.microarray.client.visualisation.methods.gbrowser.runtimeIndex.CytobandConversion;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.runtimeIndex.DataThread;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.runtimeIndex.FileLineConversion;
-import fi.csc.microarray.client.visualisation.methods.gbrowser.runtimeIndex.GeneSearchConversion;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.runtimeIndex.GtfLineParser;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.runtimeIndex.RandomAccessLineDataSource;
 import fi.csc.microarray.client.visualisation.methods.gbrowser.runtimeIndex.ScatterplotFileLineConversion;
@@ -115,13 +114,13 @@ public class Interpretation {
 	
 	public static CytobandConversion getCytobandDataThread(GBrowser browser) {
 
-		DataUrl cytobandUrl = browser.getAnnotationUrl(browser.getGenome(), AnnotationManager.AnnotationType.CYTOBANDS);
-
-		if (cytobandUrl != null) {
-
-			return new CytobandConversion(cytobandUrl, browser);
-		}
-		//throw new IllegalStateException("Cytoband url is null");
+//		DataUrl cytobandUrl = browser.getAnnotationUrl(browser.getGenome(), AnnotationManager.AnnotationType.CYTOBANDS);
+//
+//		if (cytobandUrl != null) {
+//
+//			return new CytobandConversion(cytobandUrl, browser);
+//		}
+//		throw new IllegalStateException("Cytoband url is null");
 		return null;
 	}
 	
@@ -143,7 +142,7 @@ public class Interpretation {
 		
 		try {
 			DataUrl serverUrl = new DataUrl(new URL(server), server);
-			return new EnsemblRestGeneSearch(serverUrl, species);
+			return new EnsemblRestGeneSearch(serverUrl, genome.speciesId);
 		} catch (MalformedURLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -156,22 +155,22 @@ public class Interpretation {
 		
 		Genome genome = browser.getGenome();
 		
-		DataUrl gtfUrl = browser.getAnnotationUrl(genome, AnnotationManager.AnnotationType.GTF);
-		DataUrl gtfTabixUrl = browser.getAnnotationUrl(genome, AnnotationManager.AnnotationType.GTF_TABIX);
-		DataUrl gtfIndexUrl = browser.getAnnotationUrl(genome, AnnotationManager.AnnotationType.GTF_TABIX_INDEX);
-		
+//		DataUrl gtfUrl = browser.getAnnotationUrl(genome, AnnotationManager.AnnotationType.GTF);
+//		DataUrl gtfTabixUrl = browser.getAnnotationUrl(genome, AnnotationManager.AnnotationType.GTF_TABIX);
+//		DataUrl gtfIndexUrl = browser.getAnnotationUrl(genome, AnnotationManager.AnnotationType.GTF_TABIX_INDEX);
+//		
 		DataThread annotationDataThread = null;
-
-		if (gtfUrl != null) {			
-			annotationDataThread = new GtfToFeatureConversion(gtfUrl, null, browser);
-			
-		} else 	if (gtfTabixUrl != null && gtfIndexUrl != null) {
-			annotationDataThread = new GtfToFeatureConversion(gtfTabixUrl, gtfIndexUrl, browser);
-		}
+//
+//		if (gtfUrl != null) {			
+//			annotationDataThread = new GtfToFeatureConversion(gtfUrl, null, browser);
+//			
+//		} else 	if (gtfTabixUrl != null && gtfIndexUrl != null) {
+//			annotationDataThread = new GtfToFeatureConversion(gtfTabixUrl, gtfIndexUrl, browser);
+//		}
 
 		try {
 			DataUrl restUrl = new DataUrl(new URL(server), server);
-			annotationDataThread = new EnsemblRestToFeatureConversion(restUrl, species, browser);
+			annotationDataThread = new EnsemblRestToFeatureConversion(restUrl, genome.speciesId, browser);
 		} catch (URISyntaxException | IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -206,18 +205,18 @@ public class Interpretation {
 		
 		Genome genome = browser.getGenome();
 
-		DataUrl fastaUrl = browser.getAnnotationUrl(genome, AnnotationManager.AnnotationType.REFERENCE);
-		DataUrl fastaIndexUrl = browser.getAnnotationUrl(genome, AnnotationManager.AnnotationType.REFERENCE_INDEX);
+//		DataUrl fastaUrl = browser.getAnnotationUrl(genome, AnnotationManager.AnnotationType.REFERENCE);
+//		DataUrl fastaIndexUrl = browser.getAnnotationUrl(genome, AnnotationManager.AnnotationType.REFERENCE_INDEX);
 
 		DataThread refSeqDataThread = null;
 		
-		if (fastaUrl != null && fastaIndexUrl != null) {
-			refSeqDataThread = new IndexedFastaConversion(fastaUrl, fastaIndexUrl, browser);
-		}
+//		if (fastaUrl != null && fastaIndexUrl != null) {
+//			refSeqDataThread = new IndexedFastaConversion(fastaUrl, fastaIndexUrl, browser);
+//		}
 		
 		try {
 			DataUrl restUrl = new DataUrl(new URL(server), server);
-			refSeqDataThread = new EnsemblRestReferenceConversion(restUrl, species, browser);
+			refSeqDataThread = new EnsemblRestReferenceConversion(restUrl, genome.speciesId, browser);
 		} catch (URISyntaxException | IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

@@ -44,15 +44,7 @@ public class EnsemblRestToFeatureConversion extends DataThread {
 
 		if (request instanceof GeneRequest) {
 
-			GeneRequest geneRequest = (GeneRequest)request;
-			List<Feature> resultList;
-			try {
-				resultList = processGeneSearch(geneRequest);
-				createDataResult(new GeneResult(geneRequest.getStatus(), resultList, geneRequest.getSearchString()));
-				
-			} catch (IOException e) {
-				e.printStackTrace();
-			}			
+			throw new UnsupportedOperationException(getClass().getSimpleName() + " doesn't support Gene search queries. Use class EnsemblRestApiClient instead.");
 
 		} else { 
 
@@ -178,33 +170,5 @@ public class EnsemblRestToFeatureConversion extends DataThread {
 		//IndexKeys are not needed, because gtf contains unique identifiers for lines
 
 		return exons;
-	}
-
-	private List<Feature> processGeneSearch(GeneRequest request) throws IOException {
-
-//		String searchString = request.getSearchString().toLowerCase();
-//		Chromosome chr = request.start.chr;
-//
-//		Region region = new Region(1l, Long.MAX_VALUE, chr);
-//
-//		List<Exon> exons = fetchExons(request, region);
-//		
-//		GeneSet genes = new GeneSet();				
-//		genes.add(exons.iterator(), region);
-
-		List<Feature> resultList = new LinkedList<Feature>();
-
-//		for (Gene gene : genes.values()) {
-//
-//			if (gene.getName() != null && gene.getName().toLowerCase().equals(searchString)) {
-//
-//				LinkedHashMap<DataType, Object> values = new LinkedHashMap<DataType, Object>();
-//
-//				values.put(DataType.VALUE, gene);
-//				resultList.add(new Feature(gene.getRegion(), values));
-//			}
-//		}
-//
-		return resultList;
 	}
 }
