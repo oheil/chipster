@@ -33,6 +33,7 @@ import fi.csc.microarray.filebroker.NotEnoughDiskSpaceException;
 import fi.csc.microarray.messaging.message.FeedbackMessage;
 import fi.csc.microarray.security.CryptoKey;
 import fi.csc.microarray.util.IOUtils;
+import fi.csc.microarray.util.UrlTransferUtil.UploadResponse;
 
 /**
  * Dialog for user to give feedback, report an error etc.
@@ -197,10 +198,9 @@ public class FeedbackDialog extends JDialog implements ActionListener {
     			IOUtils.copy(logFile, copyOfLog);
 
     			// save it with the file broker    	                    	
-    			String dataId = CryptoKey.generateRandom();
-    			fileBrokerClient.addFile(dataId, FileBrokerArea.CACHE, new FileInputStream(copyOfLog), copyOfLog.length(), null);
+    			UploadResponse response = fileBrokerClient.addFile(FileBrokerArea.CACHE, new FileInputStream(copyOfLog), copyOfLog.length(), null);
 
-    			String url = fileBrokerClient.getExternalURL(dataId);
+    			String url = fileBrokerClient.getExternalURL(response.getDataId());
     			message.addLog(logFile.getName(), url);
     			copyOfLog.delete();
     		}

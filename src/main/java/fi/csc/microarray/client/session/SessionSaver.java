@@ -55,6 +55,7 @@ import fi.csc.microarray.filebroker.FileBrokerClient;
 import fi.csc.microarray.filebroker.FileBrokerClient.FileBrokerArea;
 import fi.csc.microarray.util.IOUtils;
 import fi.csc.microarray.util.SwingTools;
+import fi.csc.microarray.util.UrlTransferUtil.UploadResponse;
 
 /**
  * @author hupponen
@@ -68,7 +69,6 @@ public class SessionSaver {
 	private final int DATA_BLOCK_SIZE = 2048;
 	
 	private File sessionFile;
-	private String sessionId;
 	private HashMap<DataBean, URL> newURLs = new HashMap<DataBean, URL>();
 
 	private int entryCounter = 0;
@@ -99,7 +99,6 @@ public class SessionSaver {
 	 */
 	public SessionSaver(File sessionFile, DataManager dataManager) {
 		this.sessionFile = sessionFile;
-		this.sessionId = null;
 		this.dataManager = dataManager;
 
 	}
@@ -109,9 +108,8 @@ public class SessionSaver {
 	 * 
 	 * @param sessionUrl url to write out metadata
 	 */
-	public SessionSaver(String sessionId, DataManager dataManager) {
+	public SessionSaver(DataManager dataManager) {
 		this.sessionFile = null;
-		this.sessionId = sessionId;
 		this.dataManager = dataManager;
 
 	}
@@ -173,7 +171,9 @@ public class SessionSaver {
 		
 		// save metadata
 		gatherMetadata(false, true);		
-		writeRemoteSession(area);
+		String sessionId = writeRemoteSession(area);
+		//FIXME better way to return session id
+		dataIds.add(sessionId);
 		
 		return dataIds;
 	}
@@ -227,9 +227,10 @@ public class SessionSaver {
 
 	/**
 	 * Write metadata over URL. Doesn't save actual content of the databeans.
+	 * @return 
 	 * 
 	 */
-	private void writeRemoteSession(FileBrokerArea area) throws Exception {
+	private String writeRemoteSession(FileBrokerArea area) throws Exception {
 		
 		//write metadata to byte array
 		ByteArrayOutputStream buffer = new ByteArrayOutputStream();
@@ -239,7 +240,8 @@ public class SessionSaver {
 		
 		byte[] bytes = buffer.toByteArray();
 		
-		fileBrokerClient.addFile(this.sessionId, area, new ByteArrayInputStream(bytes), bytes.length, null);
+		UploadResponse response = fileBrokerClient.addFile(area, new ByteArrayInputStream(bytes), bytes.length, null);
+		return response.getDataId();
 	}
 
 	/**

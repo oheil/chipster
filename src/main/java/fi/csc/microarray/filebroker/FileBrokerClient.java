@@ -10,7 +10,9 @@ import java.util.List;
 
 import javax.jms.JMSException;
 
+import fi.csc.microarray.databeans.DataBean;
 import fi.csc.microarray.util.IOUtils.CopyProgressListener;
+import fi.csc.microarray.util.UrlTransferUtil.UploadResponse;
 
 public interface FileBrokerClient {
 
@@ -42,7 +44,7 @@ public interface FileBrokerClient {
 	 * @throws IOException
 	 * @throws NotEnoughDiskSpaceException
 	 */
-	public abstract String addFile(String dataId, FileBrokerArea area, InputStream file, long contentLength, CopyProgressListener progressListener) throws NotEnoughDiskSpaceException, FileBrokerException, JMSException, IOException;
+	public abstract UploadResponse addFile(FileBrokerArea area, InputStream file, long contentLength, CopyProgressListener progressListener) throws NotEnoughDiskSpaceException, FileBrokerException, JMSException, IOException;
 
 	/**
 	 * Add file to file broker. Might use local transfer instead of uploading.

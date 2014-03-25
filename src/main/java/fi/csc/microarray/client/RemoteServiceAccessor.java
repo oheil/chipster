@@ -5,6 +5,7 @@ import java.util.Collection;
 import fi.csc.microarray.client.operation.ToolModule;
 import fi.csc.microarray.client.tasks.TaskExecutor;
 import fi.csc.microarray.databeans.DataManager;
+import fi.csc.microarray.filebroker.DaicFileBrokerClient;
 import fi.csc.microarray.filebroker.FileBrokerClient;
 import fi.csc.microarray.filebroker.JMSFileBrokerClient;
 import fi.csc.microarray.messaging.AdminAPI;
@@ -50,7 +51,8 @@ public class RemoteServiceAccessor implements ServiceAccessor {
 	public void initialise(MessagingEndpoint endpoint, DataManager manager, AuthenticationRequestListener authenticationRequestListener) throws Exception {		
 		this.endpoint = endpoint;
 	    this.requestTopic = endpoint.createTopic(Topics.Name.REQUEST_TOPIC,AccessMode.WRITE);
-		this.filebrokerClient = new JMSFileBrokerClient(endpoint.createTopic(Topics.Name.FILEBROKER_TOPIC, AccessMode.WRITE));
+		//this.filebrokerClient = new JMSFileBrokerClient(endpoint.createTopic(Topics.Name.FILEBROKER_TOPIC, AccessMode.WRITE));
+		this.filebrokerClient = new DaicFileBrokerClient(endpoint.createTopic(Topics.Name.FILEBROKER_TOPIC, AccessMode.WRITE));
 	    this.taskExecutor = new TaskExecutor(endpoint, manager);
 	}
 

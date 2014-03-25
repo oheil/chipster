@@ -48,6 +48,7 @@ import fi.csc.microarray.util.Files;
 import fi.csc.microarray.util.IOUtils;
 import fi.csc.microarray.util.IOUtils.CopyProgressListener;
 import fi.csc.microarray.util.Strings;
+import fi.csc.microarray.util.UrlTransferUtil.UploadResponse;
 
 public class DataManager {
 
@@ -733,10 +734,13 @@ public class DataManager {
 
 	public void saveStorageSession(String name) throws Exception {
 						
-		String sessionId = CryptoKey.generateRandom();
-		SessionSaver sessionSaver = new SessionSaver(sessionId, this);
+		SessionSaver sessionSaver = new SessionSaver(this);
 		// upload/move data files and upload metadata files, if needed
 		LinkedList<String> dataIds = sessionSaver.saveStorageSession();
+		
+		//FIXME beter way to pass sessionId
+		String sessionId = dataIds.getLast();
+		dataIds.removeLast();		
 		
 		// add metadata to file broker database (make session visible)
 		Session.getSession().getServiceAccessor().getFileBrokerClient().saveRemoteSession(name, sessionId, dataIds);
@@ -756,12 +760,11 @@ public class DataManager {
 	 */
 	public String saveFeedbackSession() throws Exception {
 	
-		String sessionId = CryptoKey.generateRandom();
-		SessionSaver sessionSaver = new SessionSaver(sessionId, this);
+		SessionSaver sessionSaver = new SessionSaver(this);
 		// upload/move data files and upload metadata files, if needed
-		sessionSaver.saveFeedbackSession();
+		LinkedList<String> dataIds = sessionSaver.saveFeedbackSession();
 		
-		return sessionId;
+		return dataIds.getLast();
 	}
 
 	
@@ -1310,14 +1313,15 @@ public class DataManager {
 		
 		// try to upload
 		try {
-			String checksum = Session.getSession().getServiceAccessor().getFileBrokerClient().addFile(
-					dataBean.getId(), 
+			UploadResponse response = Session.getSession().getServiceAccessor().getFileBrokerClient().addFile(
 					area, 
 					getContentStream(dataBean, DataNotAvailableHandling.EXCEPTION_ON_NA), 
 					getContentLength(dataBean), 
 					progressListener);
 			
-			setOrVerifyChecksum(dataBean, checksum);
+			//FIXME dataId shouldn't change
+			dataBean.setId(response.getDataId());
+			setOrVerifyChecksum(dataBean, response.getChecksum());
 
 		} catch (Exception e) {
 			logger.warn("could not upload data: " + dataBean.getName(), e);

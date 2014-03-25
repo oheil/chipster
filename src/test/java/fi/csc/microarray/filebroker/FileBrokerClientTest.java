@@ -18,6 +18,7 @@ import fi.csc.microarray.messaging.MessagingTopic.AccessMode;
 import fi.csc.microarray.messaging.Topics;
 import fi.csc.microarray.security.CryptoKey;
 import fi.csc.microarray.util.IOUtils;
+import fi.csc.microarray.util.UrlTransferUtil.UploadResponse;
 
 public class FileBrokerClientTest extends MessagingTestBase {
 
@@ -39,15 +40,14 @@ public class FileBrokerClientTest extends MessagingTestBase {
 		File file = new File("src/test/resources/affy_example.cel");
 		
 		System.out.println("Adding file");
-		String dataId = CryptoKey.generateRandom();
-		fbc.addFile(dataId, FileBrokerArea.CACHE, new FileInputStream(file), file.length(), null);
+		UploadResponse response = fbc.addFile(FileBrokerArea.CACHE, new FileInputStream(file), file.length(), null);
 
 		System.out.println("Checking file");
 		// Assert.assertTrue(fbc.checkFile(url, file.length()));
 		
 		System.out.println("Getting file");
 		long outputContentLength = 0;
-		BufferedInputStream input = new BufferedInputStream(fbc.getInputStream(dataId));
+		BufferedInputStream input = new BufferedInputStream(fbc.getInputStream(response.getDataId()));
 		while (input.read() != -1) {
 			outputContentLength++;
 		}
