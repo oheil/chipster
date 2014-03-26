@@ -65,6 +65,7 @@ public class SessionSaver {
 
 	private static final Logger logger = Logger.getLogger(SessionSaver.class);
 
+	public static final String REMOTE_SESSION_FILENAME = "session.zip";
 	
 	private final int DATA_BLOCK_SIZE = 2048;
 	
@@ -139,14 +140,15 @@ public class SessionSaver {
 	}
 	
 	public LinkedList<String> saveFeedbackSession() throws Exception {
-		return saveRemoteSession(FileBrokerArea.CACHE);
+		//FIXME
+		return saveRemoteSession(FileBrokerArea.CACHE, null);
 	}
 
-	public LinkedList<String> saveStorageSession() throws Exception {
-		return saveRemoteSession(FileBrokerArea.STORAGE);
+	public LinkedList<String> saveStorageSession(String sessionId) throws Exception {
+		return saveRemoteSession(FileBrokerArea.STORAGE, sessionId);
 	}
 
-	public LinkedList<String> saveRemoteSession(FileBrokerArea area) throws Exception {
+	public LinkedList<String> saveRemoteSession(FileBrokerArea area, String sessionId) throws Exception {
 		// move data bean contents to filebroker
 		LinkedList<String> dataIds = new LinkedList<String>();
 		
@@ -155,7 +157,7 @@ public class SessionSaver {
 			boolean success;
 			switch(area) {
 			case STORAGE:
-				success = dataManager.uploadToStorageIfNeeded(dataBean);
+				success = dataManager.uploadToStorageIfNeeded(dataBean, sessionId);
 				break;
 			case CACHE:
 				success = dataManager.uploadToCacheIfNeeded(dataBean, null);
@@ -171,9 +173,7 @@ public class SessionSaver {
 		
 		// save metadata
 		gatherMetadata(false, true);		
-		String sessionId = writeRemoteSession(area);
-		//FIXME better way to return session id
-		dataIds.add(sessionId);
+		writeRemoteSession(area, sessionId);
 		
 		return dataIds;
 	}
@@ -227,10 +227,11 @@ public class SessionSaver {
 
 	/**
 	 * Write metadata over URL. Doesn't save actual content of the databeans.
+	 * @param sessionId 
 	 * @return 
 	 * 
 	 */
-	private String writeRemoteSession(FileBrokerArea area) throws Exception {
+	private String writeRemoteSession(FileBrokerArea area, String sessionId) throws Exception {
 		
 		//write metadata to byte array
 		ByteArrayOutputStream buffer = new ByteArrayOutputStream();
@@ -240,7 +241,7 @@ public class SessionSaver {
 		
 		byte[] bytes = buffer.toByteArray();
 		
-		UploadResponse response = fileBrokerClient.addFile(area, new ByteArrayInputStream(bytes), bytes.length, null);
+		UploadResponse response = fileBrokerClient.addFile(REMOTE_SESSION_FILENAME, sessionId, area, new ByteArrayInputStream(bytes), bytes.length, null);
 		return response.getDataId();
 	}
 

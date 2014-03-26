@@ -39,6 +39,7 @@ import fi.csc.microarray.exception.MicroarrayException;
 import fi.csc.microarray.filebroker.ChecksumException;
 import fi.csc.microarray.filebroker.ChecksumInputStream;
 import fi.csc.microarray.filebroker.ContentLengthException;
+import fi.csc.microarray.filebroker.FileBrokerClient;
 import fi.csc.microarray.filebroker.FileBrokerClient.FileBrokerArea;
 import fi.csc.microarray.filebroker.FileBrokerException;
 import fi.csc.microarray.filebroker.NotEnoughDiskSpaceException;
@@ -735,15 +736,15 @@ public class DataManager {
 	public void saveStorageSession(String name) throws Exception {
 						
 		SessionSaver sessionSaver = new SessionSaver(this);
-		// upload/move data files and upload metadata files, if needed
-		LinkedList<String> dataIds = sessionSaver.saveStorageSession();
 		
-		//FIXME beter way to pass sessionId
-		String sessionId = dataIds.getLast();
-		dataIds.removeLast();		
+		FileBrokerClient fileBrokerClient = Session.getSession().getServiceAccessor().getFileBrokerClient();
 		
-		// add metadata to file broker database (make session visible)
-		Session.getSession().getServiceAccessor().getFileBrokerClient().saveRemoteSession(name, sessionId, dataIds);
+		String sessionId = fileBrokerClient.createContainer(name);
+		
+		// upload/move data files and upload metadata files, if needed		
+		LinkedList<String> dataIds = sessionSaver.saveStorageSession(sessionId);		
+		
+//		Session.getSession().getServiceAccessor().getFileBrokerClient().saveRemoteSession(name, sessionId, dataIds);
 	}
 
 	
@@ -894,7 +895,7 @@ public class DataManager {
 		
 		// try from filebroker
 		Exception remoteException;
-		try {
+		try {					
 			return Session.getSession().getServiceAccessor().getFileBrokerClient().getInputStream(bean.getId());
 		} catch (Exception e) {
 			remoteException = e;
@@ -1259,7 +1260,7 @@ public class DataManager {
 	}
 
 	
-	public boolean uploadToStorageIfNeeded(DataBean bean) throws Exception {
+	public boolean uploadToStorageIfNeeded(DataBean bean, String sessionId) throws Exception {
 
 		// check if already in storage
 		if (Session.getSession().getServiceAccessor().getFileBrokerClient().isAvailable(bean.getId(), bean.getSize(), bean.getChecksum(), FileBrokerArea.STORAGE)) {
@@ -1272,7 +1273,7 @@ public class DataManager {
 		}
 				
 		// upload
-		return upload(bean, FileBrokerArea.STORAGE, null);		
+		return upload(sessionId, bean, FileBrokerArea.STORAGE, null);		
 	}
 	
 	/**
@@ -1305,7 +1306,7 @@ public class DataManager {
 		}
 	}
 
-	private boolean upload(DataBean dataBean, FileBrokerArea area, CopyProgressListener progressListener) throws Exception {
+	private boolean upload(String sessionId, DataBean dataBean, FileBrokerArea area, CopyProgressListener progressListener) throws Exception {
 		// check if content is still available
 		if (dataBean.getContentLocations().size() == 0) {
 			return false;
@@ -1313,7 +1314,7 @@ public class DataManager {
 		
 		// try to upload
 		try {
-			UploadResponse response = Session.getSession().getServiceAccessor().getFileBrokerClient().addFile(
+			UploadResponse response = Session.getSession().getServiceAccessor().getFileBrokerClient().addFile(dataBean.getName(), sessionId,
 					area, 
 					getContentStream(dataBean, DataNotAvailableHandling.EXCEPTION_ON_NA), 
 					getContentLength(dataBean), 

@@ -10,19 +10,33 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.zip.InflaterInputStream;
 
 import javax.jms.JMSException;
 
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.log4j.Logger;
+import org.eclipse.jetty.util.ajax.JSON;
 
+import fi.csc.microarray.client.session.SessionSaver;
 import fi.csc.microarray.config.DirectoryLayout;
+import fi.csc.microarray.databeans.DataManager;
 import fi.csc.microarray.messaging.MessagingTopic;
 import fi.csc.microarray.messaging.UrlListMessageListener;
 import fi.csc.microarray.util.Files;
@@ -53,7 +67,6 @@ public class DaicFileBrokerClient implements FileBrokerClient {
 	private boolean useCompression;
 	private String localFilebrokerPath;
 	private boolean useChecksums;
-	private HashMap<String, String> remoteSessions = new HashMap<String, String>();
 	
 	public DaicFileBrokerClient(MessagingTopic urlTopic, String localFilebrokerPath) throws JMSException {
 
@@ -88,7 +101,8 @@ public class DaicFileBrokerClient implements FileBrokerClient {
 		}
 		
 		// get new url
-		URL url = getUploadURL(useCompression, FileBrokerArea.CACHE, file.length());
+		//FIXME
+		URL url = getUploadURL(null, useCompression, FileBrokerArea.CACHE, file.length());
 		if (url == null) {
 			throw new FileBrokerException("filebroker is not responding");
 		}
@@ -105,7 +119,7 @@ public class DaicFileBrokerClient implements FileBrokerClient {
 		} else {
 			InputStream stream = new FileInputStream(file);
 			try {
-				UploadResponse response = UrlTransferUtil.uploadStream(url, stream, useChunked, useCompression, useChecksums, progressListener);
+				UploadResponse response = uploadStream(url, stream, useChunked, useCompression, useChecksums, progressListener);
 				logger.debug("successfully uploaded: " + url + "\tlength: " + file.length() + "\tmd5: " + response.getChecksum());
 			} catch (ChecksumException e) {
 				// corrupted data or data id collision
@@ -121,7 +135,7 @@ public class DaicFileBrokerClient implements FileBrokerClient {
 	 * @see fi.csc.microarray.filebroker.FileBrokerClient#addFile(InputStream, CopyProgressListener)
 	 */
 	@Override
-	public UploadResponse addFile(FileBrokerArea area, InputStream file, long contentLength, CopyProgressListener progressListener) throws FileBrokerException, JMSException, IOException {
+	public UploadResponse addFile(String filename, String sessionId, FileBrokerArea area, InputStream file, long contentLength, CopyProgressListener progressListener) throws FileBrokerException, JMSException, IOException {
 		
 		URL url;
 		if (area == FileBrokerArea.CACHE) {
@@ -130,14 +144,14 @@ public class DaicFileBrokerClient implements FileBrokerClient {
 			}
 
 			// Get new url
-			url = getUploadURL(useCompression, FileBrokerArea.CACHE, contentLength);
+			url = getUploadURL(sessionId, useCompression, FileBrokerArea.CACHE, contentLength);
 			if (url == null) {
 				throw new FileBrokerException("New URL is null.");
 			}
 			
 		} else {
 			// Get new url
-			url = getUploadURL(useCompression, FileBrokerArea.STORAGE, contentLength);
+			url = getUploadURL(sessionId, useCompression, FileBrokerArea.STORAGE, contentLength);
 			if (url == null) {
 				throw new FileBrokerException("New URL is null.");
 			}			
@@ -147,7 +161,8 @@ public class DaicFileBrokerClient implements FileBrokerClient {
 		logger.debug("uploading new file: " + url);
 		UploadResponse response;
 		try {
-			response = UrlTransferUtil.uploadStream(url, file, useChunked, useCompression, useChecksums, progressListener);
+			response = uploadStream(filename, url, file, useChunked, useCompression, useChecksums, progressListener);
+			response.setDataId(sessionId + "/" + response.getDataId());
 		} catch (ChecksumException e) {
 			// corrupted data or data id collision
 			throw new IOException(e);
@@ -260,7 +275,10 @@ public class DaicFileBrokerClient implements FileBrokerClient {
 		
 		
 		try {
-			return UrlTransferUtil.isAccessible(getDownloadURL(dataId));
+			URL url = getDownloadURL(dataId);
+			if (url != null) {
+				return UrlTransferUtil.isAccessible(getDownloadURL(dataId));
+			}
 		} catch (IOException | FileBrokerException e) {
 			//TODO more general exceptions
 			new JMSException(e.toString());
@@ -388,10 +406,7 @@ public class DaicFileBrokerClient implements FileBrokerClient {
 	}
 
 	@Override
-	public void saveRemoteSession(String sessionName, String sessionId, LinkedList<String> dataIds) throws JMSException {
-		
-		//TODO store on server side
-		this.remoteSessions.put(sessionId, sessionName);
+	public void saveRemoteSession(String sessionName, String sessionId, LinkedList<String> dataIds) throws JMSException {		
 		
 //		ReplyMessageListener replyListener = new ReplyMessageListener();  
 //		try {
@@ -411,52 +426,82 @@ public class DaicFileBrokerClient implements FileBrokerClient {
 //			replyListener.cleanUp();
 //		}
 	}
+	
+	public Map<String, String> listFiles(String sessionId) {
+								
+		Map<String, String> files = new HashMap<>();
+		
+		HttpClient httpClient = new DefaultHttpClient();
+		HttpGet request = new HttpGet("http://127.0.0.1:5000/v1/containers/" + sessionId + "/files");			
+
+		HttpResponse response;
+		try {
+			response = httpClient.execute(request);
+			if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
+				//FIXME
+				System.err.println(response.getStatusLine());				
+			}
+
+			String responseBody = org.apache.commons.io.IOUtils.toString(response.getEntity().getContent(), "UTF-8");
+			
+			Map rootMap = (Map) JSON.parse(responseBody);
+			
+			Object[] fileArray = (Object[]) rootMap.get("files");
+			
+			for (Object fileObj : fileArray) {
+				Map fileMap = (Map) fileObj;
+								
+				files.put(fileMap.get("id").toString(), fileMap.get("name").toString());
+			}		
+	    	
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		return files;
+	}
 
 	@Override
 	public List<DbSession> listRemoteSessions() throws JMSException {
-		
+								
 		List<DbSession> sessions = new LinkedList<>();
 		
-		for (java.util.Map.Entry<String, String> entry : remoteSessions.entrySet()) {
-			sessions.add(new DbSession(entry.getKey(), entry.getValue(), "user"));
+		HttpClient httpClient = new DefaultHttpClient();
+		HttpGet request = new HttpGet("http://127.0.0.1:5000/v1/containers");			
+
+		HttpResponse response;
+		try {
+			response = httpClient.execute(request);
+			if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
+				//FIXME
+				System.err.println(response.getStatusLine());				
+			}
+
+			String responseBody = org.apache.commons.io.IOUtils.toString(response.getEntity().getContent(), "UTF-8");
+			
+			Object object = JSON.parse(responseBody);
+			
+			if (object instanceof Object[]) {
+				Object[] objArray = (Object[]) object;
+				
+				for (Object mapObj : objArray) {
+					if (mapObj instanceof Map) {
+						@SuppressWarnings("unchecked")
+						Map<String, String> container = (Map) mapObj;
+						
+						DbSession session = new DbSession(container.get("id"), container.get("name"), "user");
+						sessions.add(session);
+					}
+				}
+			}				
+	    	
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 		
 		return sessions;
-		
-//		ReplyMessageListener replyListener = new ReplyMessageListener();  
-//		
-//		try {
-//			CommandMessage listRequestMessage = new CommandMessage(CommandMessage.COMMAND_LIST_SESSIONS);
-//			filebrokerTopic.sendReplyableMessage(listRequestMessage, replyListener);
-//			ParameterMessage reply = replyListener.waitForReply(QUICK_POLL_OPERATION_TIMEOUT, TimeUnit.SECONDS);
-//			if (reply == null) {
-//				throw new RuntimeException("server failed to list sessions");
-//			}
-//			String[] names, sessionIds;
-//			String namesString = reply.getNamedParameter(ParameterMessage.PARAMETER_SESSION_NAME_LIST);
-//			String sessionIdsString = reply.getNamedParameter(ParameterMessage.PARAMETER_SESSION_UUID_LIST);
-//			
-//			List<DbSession> sessions = new LinkedList<>();
-//			
-//			if (namesString != null && !namesString.equals("") && sessionIdsString != null && !sessionIdsString.equals("")) {
-//				
-//				names = namesString.split("\t");
-//				sessionIds = sessionIdsString.split("\t");
-//				
-//				for (int i = 0; i < names.length && i < sessionIds.length; i++) {
-//					sessions.add(new DbSession(sessionIds[i], names[i], null));
-//				}
-//				
-//				if (names.length != sessionIds.length) {
-//					sessions.clear();
-//				}
-//			}
-//			
-//			return sessions;
-//			
-//		} finally {
-//			replyListener.cleanUp();
-//		}
 	}
 	
 
@@ -476,8 +521,6 @@ public class DaicFileBrokerClient implements FileBrokerClient {
 
 	@Override
 	public void removeRemoteSession(String dataId) throws JMSException {
-		
-		remoteSessions.remove(dataId);
 		
 //		SuccessMessageListener replyListener = new SuccessMessageListener();  
 //		
@@ -504,6 +547,7 @@ public class DaicFileBrokerClient implements FileBrokerClient {
 	 * If useCompression is true, request an url ending with .compressed.
 	 * NOTE! Compression does not work with files larger than 4 gigabytes
 	 * in JDK 1.6 and earlier.
+	 * @param sessionId 
 	 *  
 	 * @return the new URL, may be null if file broker sends null or
 	 * if reply is not received before timeout
@@ -511,67 +555,32 @@ public class DaicFileBrokerClient implements FileBrokerClient {
 	 * @throws JMSException
 	 * @throws FileBrokerException 
 	 */
-	private URL getUploadURL(boolean useCompression, FileBrokerArea area, long contentLength) throws JMSException, FileBrokerException {
+	private URL getUploadURL(String sessionId, boolean useCompression, FileBrokerArea area, long contentLength) throws JMSException, FileBrokerException {
 		
 		// FIXME how about the container id?
 		try {
-			return new URL("http://127.0.0.1:5000/v1/containers/8056456ab00211e3b825f0def195d26f/files");
+			return new URL("http://127.0.0.1:5000/v1/containers/" + sessionId + "/files");
 		} catch (MalformedURLException e) {
 			new FileBrokerException(e);
 		}
 		return null;
-		
-		
-//		logger.debug("getting new url");
-//	
-//		UrlMessageListener replyListener = new UrlMessageListener();  
-//		URL url;
-//		try {
-//			CommandMessage urlRequestMessage = new CommandMessage(CommandMessage.COMMAND_NEW_URL_REQUEST);
-//			urlRequestMessage.addNamedParameter(ParameterMessage.PARAMETER_FILE_ID, dataId);
-//			urlRequestMessage.addNamedParameter(ParameterMessage.PARAMETER_AREA, area.toString());
-//			urlRequestMessage.addNamedParameter(ParameterMessage.PARAMETER_DISK_SPACE, Long.toString(contentLength));
-//	
-//			if (useCompression) {
-//				urlRequestMessage.addParameter(ParameterMessage.PARAMETER_USE_COMPRESSION);
-//			}
-//			filebrokerTopic.sendReplyableMessage(urlRequestMessage, replyListener);
-//			url = replyListener.waitForReply(SPACE_REQUEST_TIMEOUT, TimeUnit.SECONDS);
-//		} finally {
-//			replyListener.cleanUp();
-//		}
-//		logger.debug("new url is: " + url);
-//	
-//		return url;
 	}
 
 	private URL getDownloadURL(String dataId) throws JMSException, FileBrokerException {
 		
-		// FIXME how about the container id?
+		if (!dataId.contains("/")) {
+			return null;
+		}
+		String[] split  = dataId.split("/");
+		String sessionId = split[0];
+		dataId = split[1];
+		
 		try {
-			return new URL("http://127.0.0.1:5000/v1/containers/8056456ab00211e3b825f0def195d26f/files/" + dataId + "/download");
+			return new URL("http://127.0.0.1:5000/v1/containers/" + sessionId + "/files/" + dataId + "/download");
 		} catch (MalformedURLException e) {
 			new FileBrokerException(e);
 		}
 		return null;
-		
-//		logger.debug("getting url for dataId " + dataId);
-//		
-//		UrlMessageListener replyListener = new UrlMessageListener();  
-//		URL url;
-//		try {
-//			CommandMessage getURLMessage = new CommandMessage(CommandMessage.COMMAND_GET_URL);
-//			getURLMessage.addNamedParameter(ParameterMessage.PARAMETER_FILE_ID, dataId);
-//	
-//			filebrokerTopic.sendReplyableMessage(getURLMessage, replyListener);
-//			url = replyListener.waitForReply(QUICK_POLL_OPERATION_TIMEOUT, TimeUnit.SECONDS);
-//		} finally {
-//			replyListener.cleanUp();
-//		}
-//		
-//		logger.debug("url is: " + url);
-//	
-//		return url;
 	}
 
 	@Override
@@ -587,4 +596,112 @@ public class DaicFileBrokerClient implements FileBrokerClient {
 		}
 		return UrlTransferUtil.getContentLength(url);
 	}
+
+	@Override
+	public String createContainer(String name) {
+		
+		String sessionId = null;
+		
+		HttpClient httpClient = new DefaultHttpClient();
+		HttpPost httpPost = new HttpPost("http://127.0.0.1:5000/v1/containers");			
+		MultipartEntityBuilder multipart = MultipartEntityBuilder.create();			
+		multipart.addTextBody("name", name);						
+		httpPost.setEntity(multipart.build());	
+
+		HttpResponse response;
+		try {
+			response = httpClient.execute(httpPost);
+			if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
+				//FIXME
+				System.err.println(response.getStatusLine());				
+			}
+
+			String responseBody = org.apache.commons.io.IOUtils.toString(response.getEntity().getContent(), "UTF-8");
+
+			sessionId = parseJsonUuid(responseBody);
+
+			System.out.println("container created: " + sessionId);    			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		return sessionId;
+	}
+	
+    public static UploadResponse uploadStream(String filename, URL url, InputStream fis, boolean useChunked, boolean compress, boolean useChecksums, IOUtils.CopyProgressListener progressListener) throws IOException, ChecksumException {
+
+    	String dataId = null;
+    	String checksum = null;
+
+		HttpClient httpClient = new DefaultHttpClient();
+		HttpPost httpPost;
+		try {
+			httpPost = new HttpPost(url.toURI());			
+			MultipartEntityBuilder multipart = MultipartEntityBuilder.create();
+			
+			// There are three alternatives for sending the data. Server implementation at
+			// restviews.py expects a part to be named as "file". 
+
+			// 1. Input stream
+			// this will use Transfer-Encoding: chunked, because Content-Length is not known
+//			multipart.addBinaryBody("file", fis);
+			
+			// 2. File
+			// sets ContentType "application/octet-stream" automatically, and sends the filename of
+			// the original file
+//			multipart.addBinaryBody("file", tempFile);
+			
+			// 3. Byte array
+			// requires an explicit ContentType definition
+			byte[] bytes = org.apache.commons.io.IOUtils.toByteArray(fis);
+			multipart.addBinaryBody("file", bytes, ContentType.DEFAULT_BINARY, filename);			
+			
+			httpPost.setEntity(multipart.build());	
+			
+			HttpResponse response = httpClient.execute(httpPost);
+			if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
+				//FIXME
+				System.err.println(response.getStatusLine());				
+			}
+			
+			String responseBody = org.apache.commons.io.IOUtils.toString(response.getEntity().getContent(), "UTF-8");
+			
+			dataId = parseJsonId(responseBody);
+			
+    		System.out.println(dataId);
+    		
+		} catch (URISyntaxException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+    	//checksum may be null
+    	return new UploadResponse(dataId, checksum);
+    }
+    
+    @Override
+    public String getSessionZipId(String sessionId) {
+    	Map<String, String> files = listFiles(sessionId);
+    	for (Entry<String, String> entry : files.entrySet()) {
+    		if (SessionSaver.REMOTE_SESSION_FILENAME.equals(entry.getValue())) {
+    			return sessionId + "/" + entry.getKey();
+    		}
+    	}
+		return null;
+    }
+    
+    public static String parseJsonId(String json) {    	
+    	return getJsonValue(json, "id");
+	}
+    
+    public static String parseJsonUuid(String json) {    	
+    	return getJsonValue(json, "uuid");
+	}
+    
+    public static String getJsonValue(String json, String key) {
+    	@SuppressWarnings({ "rawtypes", "unchecked" })
+		Map<String, String> rootMap = (Map) JSON.parse(json);
+    	return rootMap.get(key);
+    }
 }

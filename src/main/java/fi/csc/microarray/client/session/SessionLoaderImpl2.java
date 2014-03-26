@@ -121,7 +121,7 @@ public class SessionLoaderImpl2 {
 			
 		} else if (sessionId != null) {
 			FileBrokerClient fileBrokerClient = Session.getSession().getServiceAccessor().getFileBrokerClient();
-			InputStream inputStream = fileBrokerClient.getInputStream(sessionId);
+			InputStream inputStream = fileBrokerClient.getInputStream(fileBrokerClient.getSessionZipId(sessionId));
 			// get the session.xml zip entry using JDK, we don't need large ZIP support here because URL based sessions have no data
 			zipStream = new ZipInputStream(inputStream);
 			
