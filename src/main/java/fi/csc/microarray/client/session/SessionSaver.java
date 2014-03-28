@@ -51,6 +51,7 @@ import fi.csc.microarray.databeans.DataManager.StorageMethod;
 import fi.csc.microarray.filebroker.ChecksumException;
 import fi.csc.microarray.filebroker.ChecksumInputStream;
 import fi.csc.microarray.filebroker.ContentLengthException;
+import fi.csc.microarray.filebroker.DaicFileBrokerClient;
 import fi.csc.microarray.filebroker.FileBrokerClient;
 import fi.csc.microarray.filebroker.FileBrokerClient.FileBrokerArea;
 import fi.csc.microarray.util.IOUtils;
@@ -63,9 +64,7 @@ import fi.csc.microarray.util.UrlTransferUtil.UploadResponse;
  */
 public class SessionSaver {
 
-	private static final Logger logger = Logger.getLogger(SessionSaver.class);
-
-	public static final String REMOTE_SESSION_FILENAME = "session.zip";
+	private static final Logger logger = Logger.getLogger(SessionSaver.class);	
 	
 	private final int DATA_BLOCK_SIZE = 2048;
 	
@@ -241,7 +240,7 @@ public class SessionSaver {
 		
 		byte[] bytes = buffer.toByteArray();
 		
-		UploadResponse response = fileBrokerClient.addFile(REMOTE_SESSION_FILENAME, sessionId, area, new ByteArrayInputStream(bytes), bytes.length, null);
+		UploadResponse response = fileBrokerClient.addFile(DaicFileBrokerClient.REMOTE_SESSION_FILENAME, sessionId, area, new ByteArrayInputStream(bytes), bytes.length, null);
 		return response.getDataId();
 	}
 

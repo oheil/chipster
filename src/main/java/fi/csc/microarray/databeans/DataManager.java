@@ -1298,8 +1298,10 @@ public class DataManager {
 				return false;
 			}
 			
+			FileBrokerClient fileBrokerClient = Session.getSession().getServiceAccessor().getFileBrokerClient();			
+			String workingCopyId = fileBrokerClient.getWorkingCopyId();
 			// need to upload
-			return upload(bean, FileBrokerArea.CACHE, progressListener);
+			return upload(workingCopyId, bean, FileBrokerArea.CACHE, progressListener);
 
 		} finally {
 			bean.getLock().readLock().unlock();

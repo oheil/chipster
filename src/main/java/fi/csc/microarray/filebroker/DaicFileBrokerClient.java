@@ -61,6 +61,9 @@ public class DaicFileBrokerClient implements FileBrokerClient {
 //	private static final int MOVE_FROM_CACHE_TO_STORAGE_TIMEOUT = 24; // hours 
 	
 	private static final Logger logger = Logger.getLogger(DaicFileBrokerClient.class);
+
+	public static final String REMOTE_SESSION_FILENAME = "session.zip";
+	private static final String WORKING_COPY_NAME = "working copy";
 	
 //	private MessagingTopic filebrokerTopic;	
 	private boolean useChunked;
@@ -90,44 +93,13 @@ public class DaicFileBrokerClient implements FileBrokerClient {
 	 * @see fi.csc.microarray.filebroker.FileBrokerClient#addFile(File, CopyProgressListener)
 	 */
 	@Override
-	public void addFile(String dataId, FileBrokerArea area, File file, CopyProgressListener progressListener) throws FileBrokerException, JMSException, IOException {
+	public void addFile(String filename, String sessionId, FileBrokerArea area, File file, CopyProgressListener progressListener) throws FileBrokerException, JMSException, IOException {
 		
-		if (area != FileBrokerArea.CACHE) {
-			throw new UnsupportedOperationException();
-		}
+		BufferedInputStream stream = new BufferedInputStream(new FileInputStream(file)); 
 		
-		if (file.length() > 0 && !this.requestDiskSpace(file.length())) {
-			throw new NotEnoughDiskSpaceException();
-		}
+		this.addFile(filename, sessionId, area, stream, file.length(), progressListener);
 		
-		// get new url
-		//FIXME
-		URL url = getUploadURL(null, useCompression, FileBrokerArea.CACHE, file.length());
-		if (url == null) {
-			throw new FileBrokerException("filebroker is not responding");
-		}
-
-		// try to move/copy it locally, or otherwise upload the file
-		if (localFilebrokerPath != null && !useCompression) {
-			String filename = dataId;
-			File dest = new File(localFilebrokerPath, filename);
-			boolean success = file.renameTo(dest);
-			if (!success) {
-				IOUtils.copy(file, dest); // could not move (different partition etc.), do a local copy
-			}
-
-		} else {
-			InputStream stream = new FileInputStream(file);
-			try {
-				UploadResponse response = uploadStream(url, stream, useChunked, useCompression, useChecksums, progressListener);
-				logger.debug("successfully uploaded: " + url + "\tlength: " + file.length() + "\tmd5: " + response.getChecksum());
-			} catch (ChecksumException e) {
-				// corrupted data or data id collision
-				throw new IOException(e);
-			} finally {
-				IOUtils.closeIfPossible(stream);
-			}
-		}
+		stream.close();
 	}
 	
 	/**
@@ -463,7 +435,7 @@ public class DaicFileBrokerClient implements FileBrokerClient {
 	}
 
 	@Override
-	public List<DbSession> listRemoteSessions() throws JMSException {
+	public List<DbSession> listRemoteSessions() {
 								
 		List<DbSession> sessions = new LinkedList<>();
 		
@@ -684,7 +656,7 @@ public class DaicFileBrokerClient implements FileBrokerClient {
     public String getSessionZipId(String sessionId) {
     	Map<String, String> files = listFiles(sessionId);
     	for (Entry<String, String> entry : files.entrySet()) {
-    		if (SessionSaver.REMOTE_SESSION_FILENAME.equals(entry.getValue())) {
+    		if (REMOTE_SESSION_FILENAME.equals(entry.getValue())) {
     			return sessionId + "/" + entry.getKey();
     		}
     	}
@@ -704,4 +676,15 @@ public class DaicFileBrokerClient implements FileBrokerClient {
 		Map<String, String> rootMap = (Map) JSON.parse(json);
     	return rootMap.get(key);
     }
+
+	@Override
+	public String getWorkingCopyId() {
+    	List<DbSession> sessions = listRemoteSessions();
+    	for (DbSession session : sessions) {
+    		if (WORKING_COPY_NAME.equals(session.getName())) {
+    			return session.getDataId();
+    		}
+    	}
+		return null;
+	}
 }

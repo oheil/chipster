@@ -4,10 +4,13 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.List;
 
+import javax.jms.JMSException;
+
 import org.apache.log4j.Logger;
 
 import fi.csc.microarray.analyser.ToolDescription.OutputDescription;
 import fi.csc.microarray.filebroker.FileBrokerClient.FileBrokerArea;
+import fi.csc.microarray.filebroker.DaicFileBrokerClient;
 import fi.csc.microarray.filebroker.NotEnoughDiskSpaceException;
 import fi.csc.microarray.messaging.JobState;
 import fi.csc.microarray.messaging.message.JobMessage;
@@ -117,9 +120,23 @@ public abstract class OnDiskAnalysisJobBase extends AnalysisJob {
 			// add all described files to the result message
 			for (File outputFile : describedFiles) {
 	            // copy file to file broker
-	            String dataId = CryptoKey.generateRandom();
+				
+				//FIXME client should send sessionId in JMS work request
+				String dataId = null;
+				for (String fileName : inputMessage.payloadNames()) {
+					try {
+						dataId = inputMessage.getPayload(fileName);
+						break;
+					} catch (JMSException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}				
+				}
+				
+				String sessionId = dataId.split("/")[0];
+	            
 	            try {
-	                resultHandler.getFileBrokerClient().addFile(dataId, FileBrokerArea.CACHE, outputFile, null);
+	                resultHandler.getFileBrokerClient().addFile(outputFile.getName(), sessionId, FileBrokerArea.CACHE, outputFile, null);
 	                // put dataId to result message
 	                outputMessage.addPayload(outputFile.getName(), dataId);
 	                logger.debug("transferred output file: " + fileDescription.getFileName());

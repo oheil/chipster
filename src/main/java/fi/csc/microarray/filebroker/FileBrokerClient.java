@@ -48,6 +48,7 @@ public interface FileBrokerClient {
 
 	/**
 	 * Add file to file broker. Might use local transfer instead of uploading.
+	 * @param dataId 
 	 * 
 	 * @see #addFile(InputStream, CopyProgressListener)
 	 * 
@@ -60,7 +61,7 @@ public interface FileBrokerClient {
 	 * @throws IOException
 	 * @throws NotEnoughDiskSpaceException
 	 */
-	public abstract void addFile(String dataId, FileBrokerArea area, File file, CopyProgressListener progressListener) throws NotEnoughDiskSpaceException, FileBrokerException, JMSException, IOException;
+	public abstract void addFile(String filename, String sessionId, FileBrokerArea area, File file, CopyProgressListener progressListener) throws NotEnoughDiskSpaceException, FileBrokerException, JMSException, IOException;
 
 	/**
 	 *  Get the InputStream for a file from the FileBroker.
@@ -161,4 +162,7 @@ public interface FileBrokerClient {
 
 	
 	public String getSessionZipId(String sessionId);
+
+
+	public String getWorkingCopyId();
 }

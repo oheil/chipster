@@ -24,16 +24,16 @@ import org.xml.sax.SAXException;
 import fi.csc.microarray.config.Configuration;
 import fi.csc.microarray.config.DirectoryLayout;
 import fi.csc.microarray.constants.ApplicationConstants;
+import fi.csc.microarray.filebroker.DaicFileBrokerClient;
 import fi.csc.microarray.filebroker.FileBrokerClient;
-import fi.csc.microarray.filebroker.JMSFileBrokerClient;
-import fi.csc.microarray.messaging.JobState;
 import fi.csc.microarray.messaging.JMSMessagingEndpoint;
+import fi.csc.microarray.messaging.JobState;
 import fi.csc.microarray.messaging.MessagingEndpoint;
 import fi.csc.microarray.messaging.MessagingListener;
 import fi.csc.microarray.messaging.MessagingTopic;
+import fi.csc.microarray.messaging.MessagingTopic.AccessMode;
 import fi.csc.microarray.messaging.MonitoredNodeBase;
 import fi.csc.microarray.messaging.Topics;
-import fi.csc.microarray.messaging.MessagingTopic.AccessMode;
 import fi.csc.microarray.messaging.message.ChipsterMessage;
 import fi.csc.microarray.messaging.message.CommandMessage;
 import fi.csc.microarray.messaging.message.JobLogMessage;
@@ -162,7 +162,8 @@ public class AnalyserServer extends MonitoredNodeBase implements MessagingListen
 		
 		managerTopic = endpoint.createTopic(Topics.Name.JOB_LOG_TOPIC, AccessMode.WRITE);
 		
-		fileBroker = new JMSFileBrokerClient(this.endpoint.createTopic(Topics.Name.AUTHORISED_FILEBROKER_TOPIC, AccessMode.WRITE), this.localFilebrokerPath);
+		//fileBroker = new JMSFileBrokerClient(this.endpoint.createTopic(Topics.Name.AUTHORISED_FILEBROKER_TOPIC, AccessMode.WRITE), this.localFilebrokerPath);
+		fileBroker = new DaicFileBrokerClient(this.endpoint.createTopic(Topics.Name.AUTHORISED_FILEBROKER_TOPIC, AccessMode.WRITE));
 		
 		// create keep-alive thread and register shutdown hook
 		KeepAliveShutdownHandler.init(this);
