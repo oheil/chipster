@@ -91,7 +91,7 @@ export -f wget_retry
 
 install_dep() {
 	
-	directory=$( echo $1 | cut -d "/" -f1 )
+	directory=$( echo $1 | cut -d "/" -f1 )
 	modules=( $(find $directory/*.bash) )
 	
 	for i in "${modules[@]}"; do
@@ -101,7 +101,6 @@ install_dep() {
 		
 		# If module depends from $1, install it
 		if [[ "$depency" == "$1" ]]; then
-			cd ..
 			cd ..
 			bash install-module.sh $i
 			

@@ -34,8 +34,9 @@ read_dirs $moduledir
 
 
 ## If parallel is ON, install GNU parallel
-if [ "$parallel" == "1" ]; then
-	bash installation_files/install_parallel.bash 2>&1 | tee $logfile
+if [[ "$parallel" == "1" ]] && [[ ! -f installation_files/flags/parallel.done ]]; then
+	bash installation_files/install_parallel.bash 2>&1 | tee -a $logfile
+	touch installation_files/flags/parallel.done
 fi
 
 
@@ -70,11 +71,11 @@ for i in "${folders[@]}"; do
 	
 	# Wait for R
 	if [ "$i" == "finish" ]; then
-		if [ "$parallel" == "1" ]; then
+		if [ "$parallel" == "1" ]; then
 			sem --wait
 		fi
 	fi
-	install_file inst_files/$i.bash 2>&1 | tee $logfile
+	install_file inst_files/$i.bash 2>&1 | tee -a $logfile
 done
 
 
