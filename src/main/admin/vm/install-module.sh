@@ -27,8 +27,8 @@ cd modules/
 
 # Install module and modules that depend on it
 if [ -f $1 ]; then
-	install_module $1 2>&1 | tee $logfile
-	install_dep $1 2>&1 | tee $logfile
+	install_module $1 2>&1 | tee -a $logfile
+	install_dep $1 2>&1 | tee -a $logfile
 else
 echo 'Error: Module ' $1 ' not found.'
 fi

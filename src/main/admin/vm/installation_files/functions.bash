@@ -102,6 +102,7 @@ install_dep() {
 		# If module depends from $1, install it
 		if [[ "$depency" == "$1" ]]; then
 			cd ..
+			
 			bash install-module.sh $i
 			
 		fi
