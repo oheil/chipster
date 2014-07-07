@@ -8,7 +8,7 @@
  	 EMBOSS_PATH=${TOOLS_PATH}/EMBOSS-${EMBOSS_VERSION}
  	 
 	#note version in path                                                                                                                                                              
-	curl -s http://www.nic.funet.fi/pub/sci/molbio/chipster/dist/tools_extras/EMBOSS/EMBOSS-${EMBOSS_VERSION}.tar.gz | tar -xz -C ${TMPDIR_PATH}/
+	curl -s http://$NIC_MIRROR/pub/sci/molbio/chipster/dist/tools_extras/EMBOSS/EMBOSS-${EMBOSS_VERSION}.tar.gz | tar -xz -C ${TMPDIR_PATH}/
   	cd ${TMPDIR_PATH}/EMBOSS-6.5.7
 	
   	#wget ftp://emboss.open-bio.org/pub/EMBOSS/fixes/patches/patch-1-11.gz                                                                                                              
@@ -23,7 +23,7 @@
 
 # EMBOSS extras
 
-	curl -s http://www.nic.funet.fi/pub/sci/molbio/chipster/dist/tools_extras/EMBOSS/MEME-4.7.650.tar.gz | tar -xz -C ${TMPDIR_PATH}/
+	curl -s http://$NIC_MIRROR/pub/sci/molbio/chipster/dist/tools_extras/EMBOSS/MEME-4.7.650.tar.gz | tar -xz -C ${TMPDIR_PATH}/
 	cd ${TMPDIR_PATH}/MEME-4.7.650
 	./configure ${EMBOSS_OPTIONS}
 	make
